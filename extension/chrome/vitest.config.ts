@@ -5,5 +5,6 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['tests/e2e/**'],
+    testTimeout: 15_000,
   },
 });
