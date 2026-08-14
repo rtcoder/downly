@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test --pass-with-no-tests",
+    "test:e2e": "npm run build && playwright test",
     "package": "node scripts/package-extension.mjs"
   },
   "dependencies": {
