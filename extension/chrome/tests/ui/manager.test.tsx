@@ -334,6 +334,55 @@ describe('download manager', () => {
     expect(vi.mocked(port.search).mock.calls[3][0]).toEqual({ limit: 500, orderBy: ['-startTime'] });
   });
 
+  it('wires manager row actions through the application action service', async () => {
+    const active = download({ id: 1, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress', paused: false });
+    const paused = download({ id: 2, basename: 'Paused', extension: 'zip', filename: '/tmp/Paused.zip', state: 'in_progress', paused: true });
+    const failed = download({ id: 3, basename: 'Failed', extension: 'dmg', filename: '/tmp/Failed.dmg', state: 'interrupted', canResume: false, finalUrl: 'https://cdn.example/failed.dmg' });
+    const completed = download({ id: 4, basename: 'Complete', filename: '/tmp/Complete.pdf', state: 'complete', finalUrl: 'https://cdn.example/complete.pdf' });
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const { port } = createPort({ active: [active, paused], history: [failed, completed] });
+
+    await renderManager({ downloadsPort: port });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause Active.zip' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Resume Paused.zip' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel Active.zip' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry Failed.dmg' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Download Complete.pdf again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Complete.pdf' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Show Complete.pdf in folder' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Copy source URL for Complete.pdf' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Copy final URL for Complete.pdf' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Delete file Complete.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete file' }));
+
+    expect(port.pause).toHaveBeenCalledWith(1);
+    expect(port.resume).toHaveBeenCalledWith(2);
+    expect(port.cancel).toHaveBeenCalledWith(1);
+    expect(port.downloadAgain).toHaveBeenCalledWith(failed);
+    expect(port.downloadAgain).toHaveBeenCalledWith(completed);
+    expect(port.open).toHaveBeenCalledWith(4);
+    expect(port.show).toHaveBeenCalledWith(4);
+    expect(writeText).toHaveBeenCalledWith('https://example.com/report.pdf');
+    expect(writeText).toHaveBeenCalledWith('https://cdn.example/complete.pdf');
+    expect(port.eraseById).toHaveBeenCalledWith(4);
+    expect(port.removeFile).toHaveBeenCalledWith(4);
+  });
+
+  it('shows a controlled manager error when an action fails', async () => {
+    const completed = download({ id: 4, basename: 'Complete', filename: '/tmp/Complete.pdf', state: 'complete' });
+    const { port } = createPort({ history: [completed] });
+    vi.mocked(port.open).mockRejectedValue(new Error('Chrome denied open.'));
+
+    await renderManager({ downloadsPort: port });
+    fireEvent.click(screen.getByRole('button', { name: 'Open Complete.pdf' }));
+
+    expect(await screen.findByText('Chrome denied open.')).toBeTruthy();
+  });
+
   it('polls active downloads only while the manager is visible and active downloads exist', async () => {
     vi.useFakeTimers();
     const active = download({ id: 5, basename: 'Movie', extension: 'mp4', filename: '/tmp/Movie.mp4', state: 'in_progress', bytesReceived: 100, totalBytes: 1_000 });

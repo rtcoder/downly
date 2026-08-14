@@ -70,24 +70,25 @@ describe('shared download components', () => {
     expect(onCancel).toHaveBeenCalledWith(1);
   });
 
-  it('renders a completed download with open and remove actions', () => {
+  it('renders a completed download with open and remove-from-history actions', () => {
     const onOpen = vi.fn();
-    const onRemove = vi.fn();
+    const onEraseHistory = vi.fn();
 
     render(<DownloadRow
       download={download({ state: 'complete', bytesReceived: 1_024, endTime: '2026-08-14T10:05:00.000Z' })}
       onOpen={onOpen}
-      onRemove={onRemove}
+      onEraseHistory={onEraseHistory}
     />);
 
     expect(screen.getByText('Complete')).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' }).getAttribute('aria-valuenow')).toBe('100');
 
     fireEvent.click(screen.getByRole('button', { name: 'Open Report.pdf' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
 
     expect(onOpen).toHaveBeenCalledWith(1);
-    expect(onRemove).toHaveBeenCalledWith(1);
+    expect(onEraseHistory).toHaveBeenCalledWith(1);
   });
 
   it('renders an interrupted resumable download with error context', () => {
@@ -130,10 +131,60 @@ describe('shared download components', () => {
   });
 
   it('renders a missing completed file as unavailable', () => {
-    render(<DownloadRow download={download({ state: 'complete', exists: false })} />);
+    render(<DownloadRow
+      download={download({ state: 'complete', exists: false })}
+      onOpen={vi.fn()}
+      onRemoveFile={vi.fn()}
+      onShowInFolder={vi.fn()}
+    />);
 
     expect(screen.getByText('Missing file')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open Report.pdf' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show Report.pdf in folder' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete file Report.pdf' })).toBeNull();
+  });
+
+  it('confirms history removal separately from file deletion', () => {
+    const onEraseHistory = vi.fn();
+    const onRemoveFile = vi.fn();
+
+    render(<DownloadActions
+      download={download({ state: 'complete' })}
+      onEraseHistory={onEraseHistory}
+      onRemoveFile={onRemoveFile}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
+    expect(screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
+    expect(onEraseHistory).toHaveBeenCalledWith(1);
+    expect(onRemoveFile).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete file Report.pdf' }));
+    expect(screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete file' }));
+    expect(onRemoveFile).toHaveBeenCalledWith(1);
+    expect(onEraseHistory).toHaveBeenCalledOnce();
+  });
+
+  it('renders copy URL actions from visible controls', () => {
+    const onCopySourceUrl = vi.fn();
+    const onCopyFinalUrl = vi.fn();
+
+    render(<DownloadActions
+      download={download({
+        url: 'https://origin.example/report.pdf',
+        finalUrl: 'https://cdn.example/report.pdf',
+      })}
+      onCopySourceUrl={onCopySourceUrl}
+      onCopyFinalUrl={onCopyFinalUrl}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy source URL for Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy final URL for Report.pdf' }));
+
+    expect(onCopySourceUrl).toHaveBeenCalledWith(1);
+    expect(onCopyFinalUrl).toHaveBeenCalledWith(1);
   });
 
   it('ignores stale metrics from a different download row', () => {
@@ -155,7 +206,7 @@ describe('shared download components', () => {
     render(<>
       <DownloadProgress download={download()} metrics={activeMetrics} />
       <DownloadStatus download={download({ paused: true })} />
-      <DownloadActions download={download({ state: 'complete' })} onRemove={vi.fn()} />
+      <DownloadActions download={download({ state: 'complete' })} onEraseHistory={vi.fn()} />
       <FileCategoryIcon category="archive" />
       <SearchInput value="report" onChange={onChange} />
       <EmptyState title="No downloads" description="Try another search." />

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { createDownloadActionService } from '../../application/download-actions';
 import type { DownloadsPort } from '../../application/download-repository';
 import type { DownloadRecord } from '../../domain/downloads/types';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
-import { DownloadRow, EmptyState, SearchInput } from '../shared';
+import { DownloadRow, EmptyState, SearchInput, ToastRegion } from '../shared';
 import { useActiveDownloadPolling, useDownloads, type RuntimeMessageSource } from '../shared/hooks';
 
 export type { RuntimeMessageSource };
@@ -20,7 +21,18 @@ export function SidePanelApp({
   openManager = openFullManager,
 }: SidePanelAppProps) {
   const [search, setSearch] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
   const { downloads, loading, replaceActiveDownloads } = useDownloads(downloadsPort, runtimeMessages);
+  const downloadActions = useMemo(
+    () => createDownloadActionService({ downloadsPort }),
+    [downloadsPort],
+  );
+  const runAction = useCallback((action: () => Promise<unknown> | void) => {
+    setActionError(null);
+    void Promise.resolve(action()).catch((error: unknown) => {
+      setActionError(messageFromError(error));
+    });
+  }, []);
   const activeDownloads = useMemo(
     () => downloads.filter((download) => download.state === 'in_progress'),
     [downloads],
@@ -51,14 +63,24 @@ export function SidePanelApp({
           download={download}
           key={download.id}
           metrics={metrics.find((metric) => metric.downloadId === download.id)}
-          onCancel={(downloadId) => void downloadsPort.cancel(downloadId)}
-          onOpen={(downloadId) => void downloadsPort.open(downloadId)}
-          onPause={(downloadId) => void downloadsPort.pause(downloadId)}
-          onResume={(downloadId) => void downloadsPort.resume(downloadId)}
-          onShowInFolder={(downloadId) => downloadsPort.show(downloadId)}
+          onCancel={() => runAction(() => downloadActions.cancel(download))}
+          onCopyFinalUrl={() => runAction(() => downloadActions.copyFinalUrl(download))}
+          onCopySourceUrl={() => runAction(() => downloadActions.copySourceUrl(download))}
+          onDownloadAgain={() => runAction(() => downloadActions.downloadAgain(download))}
+          onEraseHistory={() => runAction(() => downloadActions.eraseHistory(download))}
+          onOpen={() => runAction(() => downloadActions.open(download))}
+          onPause={() => runAction(() => downloadActions.pause(download))}
+          onRemoveFile={() => runAction(() => downloadActions.removeFile(download))}
+          onResume={() => runAction(() => downloadActions.resume(download))}
+          onRetry={() => runAction(() => downloadActions.retry(download))}
+          onShowInFolder={() => runAction(() => downloadActions.showInFolder(download))}
         />
       ))}
     </section>
+    <ToastRegion
+      messages={actionError ? [{ id: 'download-action-error', tone: 'error', message: actionError }] : []}
+      onDismiss={() => setActionError(null)}
+    />
   </main>;
 }
 
@@ -124,4 +146,12 @@ export function openFullManager() {
   }
 
   window.open(managerUrl);
+}
+
+function messageFromError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Download action failed.';
 }

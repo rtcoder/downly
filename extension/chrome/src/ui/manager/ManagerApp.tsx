@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { createDownloadActionService } from '../../application/download-actions';
 import type { DownloadSearchQuery, DownloadsPort } from '../../application/download-repository';
 import type { DownloadRecord } from '../../domain/downloads/types';
 import { filterDownloads, type DownloadFilters } from '../../domain/downloads/filter-downloads';
 import { searchDownloads } from '../../domain/downloads/search-downloads';
 import { sortDownloads } from '../../domain/downloads/sort-downloads';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
-import { SearchInput } from '../shared';
+import { SearchInput, ToastRegion } from '../shared';
 import { useActiveDownloadPolling } from '../shared/hooks';
 import {
   EMPTY_MANAGER_FILTERS,
@@ -49,6 +50,7 @@ export function ManagerApp({
   const [groupBy, setGroupBy] = useState<ManagerGroupKey>('none');
   const [filters, setFilters] = useState<ManagerFilterState>(EMPTY_MANAGER_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const {
     activeDownloads,
     downloads,
@@ -60,6 +62,16 @@ export function ManagerApp({
     replaceActiveDownloads,
   } = useManagerDownloads(downloadsPort, runtimeMessages);
   const { metrics } = useActiveDownloadPolling(downloadsPort, activeDownloads, replaceActiveDownloads);
+  const downloadActions = useMemo(
+    () => createDownloadActionService({ downloadsPort }),
+    [downloadsPort],
+  );
+  const runAction = useCallback((action: () => Promise<unknown> | void) => {
+    setActionError(null);
+    void Promise.resolve(action()).catch((error: unknown) => {
+      setActionError(messageFromError(error));
+    });
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
@@ -117,12 +129,13 @@ export function ManagerApp({
     </section>
 
     <DownloadsView
+      downloadActions={downloadActions}
       downloads={visibleDownloads}
-      downloadsPort={downloadsPort}
       groupBy={groupBy}
       loading={loading}
       metrics={metrics}
       now={now}
+      onAction={runAction}
     />
 
     <footer>
@@ -130,6 +143,10 @@ export function ManagerApp({
         Load older downloads
       </button>
     </footer>
+    <ToastRegion
+      messages={actionError ? [{ id: 'download-action-error', tone: 'error', message: actionError }] : []}
+      onDismiss={() => setActionError(null)}
+    />
   </main>;
 }
 
@@ -306,4 +323,12 @@ function defaultRuntimeMessages(): RuntimeMessageSource | undefined {
   }).chrome;
 
   return chromeApi?.runtime?.onMessage;
+}
+
+function messageFromError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Download action failed.';
 }

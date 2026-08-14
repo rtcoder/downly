@@ -1,5 +1,5 @@
 import type { ActiveDownloadMetrics } from '../../../application/active-download-sampler';
-import type { DownloadsPort } from '../../../application/download-repository';
+import type { DownloadActionService } from '../../../application/download-actions';
 import type { DownloadRecord } from '../../../domain/downloads/types';
 import { groupDownloadsByTime } from '../../../domain/downloads/group-downloads';
 import { DownloadRow, EmptyState } from '../../shared';
@@ -11,10 +11,19 @@ export interface DownloadsViewProps {
   loading: boolean;
   metrics: ActiveDownloadMetrics[];
   now: Date;
-  downloadsPort: DownloadsPort;
+  downloadActions: DownloadActionService;
+  onAction: (action: () => Promise<unknown> | void) => void;
 }
 
-export function DownloadsView({ downloads, groupBy, loading, metrics, now, downloadsPort }: DownloadsViewProps) {
+export function DownloadsView({
+  downloads,
+  groupBy,
+  loading,
+  metrics,
+  now,
+  downloadActions,
+  onAction,
+}: DownloadsViewProps) {
   if (loading) {
     return <p>Loading downloads...</p>;
   }
@@ -25,7 +34,7 @@ export function DownloadsView({ downloads, groupBy, loading, metrics, now, downl
 
   if (groupBy === 'none') {
     return <section aria-label="Download list">
-      {downloads.map((download) => renderRow(download, metrics, downloadsPort))}
+      {downloads.map((download) => renderRow(download, metrics, downloadActions, onAction))}
     </section>;
   }
 
@@ -33,22 +42,33 @@ export function DownloadsView({ downloads, groupBy, loading, metrics, now, downl
     {groupsFor(downloads, groupBy, now).map((group) => (
       <section aria-label={group.label} key={group.label}>
         <h2>{group.label}</h2>
-        {group.downloads.map((download) => renderRow(download, metrics, downloadsPort))}
+        {group.downloads.map((download) => renderRow(download, metrics, downloadActions, onAction))}
       </section>
     ))}
   </section>;
 }
 
-function renderRow(download: DownloadRecord, metrics: ActiveDownloadMetrics[], downloadsPort: DownloadsPort) {
+function renderRow(
+  download: DownloadRecord,
+  metrics: ActiveDownloadMetrics[],
+  downloadActions: DownloadActionService,
+  onAction: (action: () => Promise<unknown> | void) => void,
+) {
   return <DownloadRow
     download={download}
     key={download.id}
     metrics={metrics.find((metric) => metric.downloadId === download.id)}
-    onCancel={(downloadId) => void downloadsPort.cancel(downloadId)}
-    onOpen={(downloadId) => void downloadsPort.open(downloadId)}
-    onPause={(downloadId) => void downloadsPort.pause(downloadId)}
-    onResume={(downloadId) => void downloadsPort.resume(downloadId)}
-    onShowInFolder={(downloadId) => downloadsPort.show(downloadId)}
+    onCancel={() => onAction(() => downloadActions.cancel(download))}
+    onCopyFinalUrl={() => onAction(() => downloadActions.copyFinalUrl(download))}
+    onCopySourceUrl={() => onAction(() => downloadActions.copySourceUrl(download))}
+    onDownloadAgain={() => onAction(() => downloadActions.downloadAgain(download))}
+    onEraseHistory={() => onAction(() => downloadActions.eraseHistory(download))}
+    onOpen={() => onAction(() => downloadActions.open(download))}
+    onPause={() => onAction(() => downloadActions.pause(download))}
+    onRemoveFile={() => onAction(() => downloadActions.removeFile(download))}
+    onResume={() => onAction(() => downloadActions.resume(download))}
+    onRetry={() => onAction(() => downloadActions.retry(download))}
+    onShowInFolder={() => onAction(() => downloadActions.showInFolder(download))}
   />;
 }
 
