@@ -23,6 +23,7 @@ import {
 } from './components/manager-options';
 import { DownloadsView } from './views/DownloadsView';
 import { DuplicatesView } from './views/DuplicatesView';
+import { StatisticsView } from './views/StatisticsView';
 
 export interface RuntimeMessageSource {
   addListener(listener: (message: unknown) => void): void;
@@ -37,6 +38,7 @@ export interface ManagerAppProps {
 
 const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = { state: 'in_progress' };
 const HISTORY_QUERY: DownloadSearchQuery = { limit: 500, orderBy: ['-startTime'] };
+const STATISTICS_HISTORY_QUERY: DownloadSearchQuery = { orderBy: ['-startTime'] };
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function ManagerApp({
@@ -61,6 +63,7 @@ export function ManagerApp({
     loadOlder,
     refresh,
     replaceActiveDownloads,
+    statisticsDownloads,
   } = useManagerDownloads(downloadsPort, runtimeMessages);
   const { metrics } = useActiveDownloadPolling(downloadsPort, activeDownloads, replaceActiveDownloads);
   const downloadActions = useMemo(
@@ -80,7 +83,7 @@ export function ManagerApp({
   }, [search]);
 
   const visibleDownloads = useMemo(() => {
-    const viewFiltered = view === 'duplicates'
+    const viewFiltered = view === 'duplicates' || view === 'statistics'
       ? downloads
       : filterDownloads(downloads, { predicate: view });
     const queryFiltered = filterDownloads(viewFiltered, toDownloadFilters(filters));
@@ -137,7 +140,9 @@ export function ManagerApp({
       )}
     </section>
 
-    {view === 'duplicates' ? (
+    {view === 'statistics' ? (
+      <StatisticsView downloads={statisticsDownloads} now={now} />
+    ) : view === 'duplicates' ? (
       <DuplicatesView
         downloads={visibleDownloads}
         loading={loading}
@@ -173,19 +178,25 @@ function useManagerDownloads(
 ) {
   const [activeDownloads, setActiveDownloads] = useState<DownloadRecord[]>([]);
   const [historyDownloads, setHistoryDownloads] = useState<DownloadRecord[]>([]);
+  const [statisticsDownloads, setStatisticsDownloads] = useState<DownloadRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [canLoadOlder, setCanLoadOlder] = useState(false);
   const refreshSequence = useRef(0);
+  const replaceActiveDownloads = useCallback((downloads: DownloadRecord[]) => {
+    setActiveDownloads(downloads);
+    setStatisticsDownloads((current) => mergeActiveFirst(downloads, current));
+  }, []);
 
   const refresh = useCallback(async () => {
     const sequence = refreshSequence.current + 1;
     refreshSequence.current = sequence;
     setLoading(true);
 
-    const [active, history] = await Promise.all([
+    const [active, history, statisticsHistory] = await Promise.all([
       downloadsPort.search(ACTIVE_DOWNLOADS_QUERY),
       downloadsPort.search(HISTORY_QUERY),
+      downloadsPort.search(STATISTICS_HISTORY_QUERY),
     ]);
 
     if (refreshSequence.current !== sequence) {
@@ -194,6 +205,7 @@ function useManagerDownloads(
 
     setActiveDownloads(active);
     setHistoryDownloads(history);
+    setStatisticsDownloads(mergeActiveFirst(active, statisticsHistory));
     setCanLoadOlder(history.length > 0);
     setLoading(false);
   }, [downloadsPort]);
@@ -258,7 +270,8 @@ function useManagerDownloads(
     loadingOlder,
     loadOlder,
     refresh,
-    replaceActiveDownloads: setActiveDownloads,
+    replaceActiveDownloads,
+    statisticsDownloads,
   };
 }
 

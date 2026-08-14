@@ -50,6 +50,7 @@ function createPort(fixtures: {
   active?: DownloadRecord[];
   history?: DownloadRecord[];
   older?: DownloadRecord[];
+  statistics?: DownloadRecord[];
 } = {}) {
   const searches: DownloadSearchQuery[] = [];
   const port: DownloadsPort = {
@@ -60,6 +61,9 @@ function createPort(fixtures: {
       }
       if (query.startedBefore) {
         return fixtures.older ?? [];
+      }
+      if (query.limit === undefined && query.orderBy?.includes('-startTime')) {
+        return fixtures.statistics ?? fixtures.history ?? [];
       }
       return fixtures.history ?? [];
     }),
@@ -157,6 +161,65 @@ describe('download manager', () => {
     expect(visibleRows()).toEqual(['Active.zip', 'Completed.pdf', 'Failed.dmg']);
   });
 
+  it('shows statistics for available Chrome download history', async () => {
+    const completed = download({
+      id: 1,
+      basename: 'Report',
+      filename: '/tmp/Report.pdf',
+      category: 'document',
+      sourceDomain: 'docs.example',
+      fileSize: 4_096,
+      startTime: '2026-08-14T09:00:00.000Z',
+    });
+    const failed = download({
+      id: 2,
+      basename: 'Archive',
+      filename: '/tmp/Archive.zip',
+      category: 'archive',
+      sourceDomain: 'files.example',
+      state: 'interrupted',
+      bytesReceived: 1_024,
+      fileSize: 0,
+      totalBytes: 0,
+      startTime: '2026-08-13T09:00:00.000Z',
+    });
+    const { port } = createPort({ history: [completed, failed] });
+
+    await renderManager({ downloadsPort: port, now: new Date('2026-08-14T12:00:00.000Z') });
+    fireEvent.click(screen.getByRole('button', { name: 'Statistics' }));
+
+    expect(screen.getByRole('heading', { name: 'Statistics' })).toBeTruthy();
+    expect(screen.getByText(/Chrome download history available to Downly/i)).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Downloads today' }).textContent).toContain('1');
+    expect(screen.getByRole('region', { name: 'Completed count' }).textContent).toContain('1');
+    expect(screen.getByRole('region', { name: 'Interrupted count' }).textContent).toContain('1');
+    expect(screen.getByRole('figure', { name: 'Downloaded bytes by period' })).toBeTruthy();
+    expect(screen.getByRole('table', { name: 'Count by source domain' })).toBeTruthy();
+  });
+
+  it('calculates statistics from available history beyond the initial 500-item manager page', async () => {
+    const visibleHistory = createDownloads(500);
+    const hiddenLargest = download({
+      id: 999,
+      basename: 'Hidden archive',
+      filename: '/tmp/Hidden archive.zip',
+      category: 'archive',
+      fileSize: 25_000,
+      totalBytes: 25_000,
+      startTime: '2026-08-10T12:00:00.000Z',
+    });
+    const { port, searches } = createPort({
+      history: visibleHistory,
+      statistics: [...visibleHistory, hiddenLargest],
+    });
+
+    await renderManager({ downloadsPort: port, now: new Date('2026-08-14T12:00:00.000Z') });
+    fireEvent.click(screen.getByRole('button', { name: 'Statistics' }));
+
+    expect(screen.getByRole('region', { name: 'Largest item' }).textContent).toContain('Hidden archive');
+    expect(searches).toContainEqual({ orderBy: ['-startTime'] });
+  });
+
   it('shows possible duplicate groups with confidence, reasons, and matching download action', async () => {
     const original = download({
       id: 1,
@@ -211,6 +274,7 @@ describe('download manager', () => {
     expect(searches).toEqual([
       { state: 'in_progress' },
       { limit: 500, orderBy: ['-startTime'] },
+      { orderBy: ['-startTime'] },
     ]);
     expect(screen.getByLabelText('Loaded downloads').textContent).toBe('500 loaded');
     expect(visibleRows()[0]).toBe('Active.zip');
@@ -245,7 +309,7 @@ describe('download manager', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Load older downloads' }).hasAttribute('disabled')).toBe(true));
 
     expect(visibleRows()).toEqual(['Newest.pdf', 'Oldest.pdf']);
-    expect(port.search).toHaveBeenCalledTimes(3);
+    expect(port.search).toHaveBeenCalledTimes(4);
   });
 
   it('debounces search input before applying query results', async () => {
@@ -340,29 +404,36 @@ describe('download manager', () => {
     const runtimeMessages = createRuntimeMessages();
     const firstActive = deferred<DownloadRecord[]>();
     const firstHistory = deferred<DownloadRecord[]>();
+    const firstStatistics = deferred<DownloadRecord[]>();
     const secondActive = deferred<DownloadRecord[]>();
     const secondHistory = deferred<DownloadRecord[]>();
+    const secondStatistics = deferred<DownloadRecord[]>();
     const stale = download({ id: 1, basename: 'Stale', filename: '/tmp/Stale.pdf' });
     const fresh = download({ id: 2, basename: 'Fresh', filename: '/tmp/Fresh.pdf' });
     const activeResponses = [firstActive, secondActive];
     const historyResponses = [firstHistory, secondHistory];
+    const statisticsResponses = [firstStatistics, secondStatistics];
     const { port } = createPort();
     vi.mocked(port.search).mockImplementation((query: DownloadSearchQuery) => {
       if (query.state === 'in_progress') {
         return (activeResponses.shift() ?? deferred<DownloadRecord[]>()).promise;
       }
+      if (query.limit === undefined && query.orderBy?.includes('-startTime')) {
+        return (statisticsResponses.shift() ?? deferred<DownloadRecord[]>()).promise;
+      }
       return (historyResponses.shift() ?? deferred<DownloadRecord[]>()).promise;
     });
 
     render(<ManagerApp downloadsPort={port} runtimeMessages={runtimeMessages} />);
-    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(3));
 
     act(() => runtimeMessages.send({ type: 'downloads-invalidated' }));
-    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(6));
 
     await act(async () => {
       secondActive.resolve([]);
       secondHistory.resolve([fresh]);
+      secondStatistics.resolve([fresh]);
       await Promise.resolve();
     });
     await waitFor(() => expect(visibleRows()).toEqual(['Fresh.pdf']));
@@ -370,12 +441,14 @@ describe('download manager', () => {
     await act(async () => {
       firstActive.resolve([]);
       firstHistory.resolve([stale]);
+      firstStatistics.resolve([stale]);
       await Promise.resolve();
     });
 
     expect(visibleRows()).toEqual(['Fresh.pdf']);
-    expect(vi.mocked(port.search).mock.calls[2][0]).toEqual({ state: 'in_progress' });
-    expect(vi.mocked(port.search).mock.calls[3][0]).toEqual({ limit: 500, orderBy: ['-startTime'] });
+    expect(vi.mocked(port.search).mock.calls[3][0]).toEqual({ state: 'in_progress' });
+    expect(vi.mocked(port.search).mock.calls[4][0]).toEqual({ limit: 500, orderBy: ['-startTime'] });
+    expect(vi.mocked(port.search).mock.calls[5][0]).toEqual({ orderBy: ['-startTime'] });
   });
 
   it('wires manager row actions through the application action service', async () => {
@@ -442,12 +515,12 @@ describe('download manager', () => {
     });
 
     await renderManager({ downloadsPort: port });
-    expect(port.search).toHaveBeenCalledTimes(2);
+    expect(port.search).toHaveBeenCalledTimes(3);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
-    expect(port.search).toHaveBeenCalledTimes(3);
+    expect(port.search).toHaveBeenCalledTimes(4);
     expect(screen.getByText('200 B/s')).toBeTruthy();
 
     setVisibilityState('hidden');
@@ -457,7 +530,7 @@ describe('download manager', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
-    expect(port.search).toHaveBeenCalledTimes(3);
+    expect(port.search).toHaveBeenCalledTimes(4);
 
     setVisibilityState('visible');
     act(() => document.dispatchEvent(new Event('visibilitychange')));
@@ -465,11 +538,11 @@ describe('download manager', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
-    expect(port.search).toHaveBeenCalledTimes(4);
+    expect(port.search).toHaveBeenCalledTimes(5);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
-    expect(port.search).toHaveBeenCalledTimes(4);
+    expect(port.search).toHaveBeenCalledTimes(5);
   });
 });
