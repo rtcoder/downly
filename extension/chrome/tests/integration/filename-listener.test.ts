@@ -63,6 +63,8 @@ async function flushAsyncWork(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
 }
 
 describe('registerFilenameListener', () => {
@@ -122,6 +124,8 @@ describe('registerFilenameListener', () => {
 
     expect(listener()(rawDownload, suggest)).toBe(true);
     expect(suggest).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(resolveSettings).toBeTypeOf('function');
     resolveSettings?.(settings());
     await flushAsyncWork();
 
@@ -147,6 +151,38 @@ describe('registerFilenameListener', () => {
     registerFilenameListener(chrome, async () => Promise.reject(new Error('Storage unavailable')));
 
     listener()(rawDownload, suggest);
+    await flushAsyncWork();
+
+    expect(suggest).toHaveBeenCalledOnce();
+    expect(suggest).toHaveBeenCalledWith();
+  });
+
+  it('falls back to Chrome defaults when loading settings throws synchronously', async () => {
+    const { chrome, listener } = createChromeApi();
+    const suggest = vi.fn();
+    registerFilenameListener(chrome, () => {
+      throw new Error('Storage unavailable');
+    });
+
+    expect(listener()(rawDownload, suggest)).toBe(true);
+    await flushAsyncWork();
+
+    expect(suggest).toHaveBeenCalledOnce();
+    expect(suggest).toHaveBeenCalledWith();
+  });
+
+  it('falls back to Chrome defaults when normalizing the download fails', async () => {
+    const { chrome, listener } = createChromeApi();
+    const suggest = vi.fn();
+    const malformedDownload = { ...rawDownload };
+    Object.defineProperty(malformedDownload, 'filename', {
+      get() {
+        throw new Error('Invalid filename');
+      },
+    });
+    registerFilenameListener(chrome, async () => settings());
+
+    expect(listener()(malformedDownload, suggest)).toBe(true);
     await flushAsyncWork();
 
     expect(suggest).toHaveBeenCalledOnce();

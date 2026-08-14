@@ -37,7 +37,8 @@ export function registerFilenameListener(
       suggest();
     };
 
-    void loadSettings()
+    void Promise.resolve()
+      .then(loadSettings)
       .then((settings) => {
         if (!settings.organizerEnabled) {
           suggestOnce();
