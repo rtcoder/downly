@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Install - Downly</title>
+    <meta name="description" content="Install Downly from source while the extension is in early release.">
+    <link rel="stylesheet" href="assets/css/site.css">
+    <script src="assets/js/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Downly home"><span class="brand-mark">D</span><span>Downly</span></a>
+      <nav aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="install.html">Install</a>
+        <a href="support.html">Support</a>
+        <a href="changelog.html">Changelog</a>
+      </nav>
+    </header>
+    <main id="content" class="content-page">
+      <p class="eyebrow">Install</p>
+      <h1>Install Downly from source</h1>
+      <p class="lede">Downly is version 0.1.0 and targets Chrome 123 or newer. Until a packaged release is published, load the built extension manually.</p>
+      <section class="callout">
+        <h2>Chrome Web Store</h2>
+        <p>Downly is not published in the Chrome Web Store yet. When it is published, this page will link to the listing and the install flow will be Chrome Web Store: open the listing, choose Add to Chrome, then approve the listed permissions.</p>
+      </section>
+      <h2>Contributor install</h2>
+      <ol class="steps">
+        <li>Install dependencies in <code>extension/chrome</code>.</li>
+        <li>Run <button class="copy-command" type="button" data-copy="npm run build"><code>npm run build</code></button>.</li>
+        <li>Open <code>chrome://extensions</code> and turn on Developer mode.</li>
+        <li>Choose Load unpacked and select <code>extension/chrome/dist</code>.</li>
+        <li>Pin Downly or open the side panel to start managing downloads.</li>
+      </ol>
+      <section class="callout">
+        <h2>Packaging</h2>
+        <p>After building, <button class="copy-command" type="button" data-copy="npm run package"><code>npm run package</code></button> creates a zip artifact from the built extension.</p>
+      </section>
+    </main>
+    <footer class="site-footer"><p>&copy; <span data-current-year></span> Downly.</p></footer>
+  </body>
+</html>

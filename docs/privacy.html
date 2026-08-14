@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Privacy - Downly</title>
+    <meta name="description" content="Downly privacy and Chrome permission explanations.">
+    <link rel="stylesheet" href="assets/css/site.css">
+    <script src="assets/js/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Downly home"><span class="brand-mark">D</span><span>Downly</span></a>
+      <nav aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="install.html">Install</a>
+        <a href="support.html">Support</a>
+        <a href="changelog.html">Changelog</a>
+      </nav>
+    </header>
+    <main id="content" class="content-page">
+      <p class="eyebrow">Privacy</p>
+      <h1>Downly keeps download data local</h1>
+      <p class="lede">Downly does not run a hosted service and does not upload your download history, file names, source URLs, or files. The extension works inside your Chrome profile using local browser APIs.</p>
+
+      <section class="callout">
+        <h2>Data processed locally</h2>
+        <p>Downly processes Chrome download records such as filenames, source URLs, final URLs, source domains, MIME types, file categories, file sizes, states, error codes, start times, end times, and progress values. It also processes your local settings and Smart Organizer rules.</p>
+      </section>
+
+      <section class="policy-list" aria-label="Permission explanations">
+        <article><h2>downloads</h2><p>Used to read Chrome download history, watch active downloads, calculate progress, search records, detect possible duplicates, and start repeat downloads when you choose that action.</p></article>
+        <article><h2>downloads.open</h2><p>Used only when you press an Open action for a completed download. Downly does not open files automatically.</p></article>
+        <article><h2>downloads.ui</h2><p>Used to apply the optional setting that replaces Chrome's native downloads UI with Downly. If the browser does not support the option, Downly shows a local warning.</p></article>
+        <article><h2>storage</h2><p>Used to save settings, theme preference, badge preference, filename conflict behavior, and Smart Organizer rules in local Chrome storage.</p></article>
+        <article><h2>sidePanel</h2><p>Used to show Downly in Chrome's side panel so you can inspect active and recent downloads without leaving the current tab.</p></article>
+      </section>
+
+      <section class="callout">
+        <h2>No sale or sharing of data</h2>
+        <p>Downly does not collect analytics, create accounts, sell data, share data with third parties, synchronize download history, or send files to external servers.</p>
+      </section>
+
+      <section class="callout">
+        <h2>Local storage and clearing settings</h2>
+        <p>Settings are stored under the local Chrome extension storage for this browser profile. To clear them, remove Downly from <code>chrome://extensions</code>, or open Chrome site and extension storage controls and clear the extension's local data. Clearing Chrome download history also removes the history records Downly can display.</p>
+      </section>
+    </main>
+    <footer class="site-footer"><p>&copy; <span data-current-year></span> Downly.</p></footer>
+  </body>
+</html>
