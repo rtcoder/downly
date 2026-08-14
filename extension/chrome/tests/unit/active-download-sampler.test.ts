@@ -64,6 +64,22 @@ describe('ActiveDownloadSampler', () => {
     }]);
   });
 
+  it('does not let a negative byte delta contaminate the next valid speed sample', () => {
+    const sampler = new ActiveDownloadSampler();
+    sampler.sample([download({ bytesReceived: 1_000 })], 1_000);
+
+    expect(sampler.sample([download({ bytesReceived: 500 })], 2_000)).toEqual([{
+      downloadId: 1,
+      bytesPerSecond: null,
+      etaSeconds: null,
+    }]);
+    expect(sampler.sample([download({ bytesReceived: 1_500 })], 3_000)).toEqual([{
+      downloadId: 1,
+      bytesPerSecond: 1_000,
+      etaSeconds: 2.5,
+    }]);
+  });
+
   it('smooths subsequent instantaneous speeds with EWMA', () => {
     const sampler = new ActiveDownloadSampler();
     sampler.sample([download({ bytesReceived: 0 })], 0);
@@ -99,7 +115,7 @@ describe('ActiveDownloadSampler', () => {
     }]);
   });
 
-  it('prefers Chrome estimatedEndTime for ETA and clamps elapsed estimates to zero', () => {
+  it('prefers valid Chrome estimatedEndTime and falls back when it is invalid or stale', () => {
     const sampler = new ActiveDownloadSampler();
     sampler.sample([download({ bytesReceived: 0 })], 1_000);
 
@@ -125,7 +141,7 @@ describe('ActiveDownloadSampler', () => {
     })], 3_000)).toEqual([{
       downloadId: 1,
       bytesPerSecond: 1_000,
-      etaSeconds: 0,
+      etaSeconds: 1,
     }]);
   });
 });

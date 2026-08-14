@@ -90,9 +90,11 @@ function estimatedEtaSeconds(estimatedEndTime: string | null, timestampMs: numbe
   }
 
   const estimatedEndTimeMs = Date.parse(estimatedEndTime);
-  return Number.isFinite(estimatedEndTimeMs)
-    ? Math.max(0, (estimatedEndTimeMs - timestampMs) / 1_000)
-    : null;
+  if (!Number.isFinite(estimatedEndTimeMs) || estimatedEndTimeMs <= timestampMs) {
+    return null;
+  }
+
+  return (estimatedEndTimeMs - timestampMs) / 1_000;
 }
 
 function calculatedEtaSeconds(download: DownloadRecord, bytesPerSecond: number | null): number | null {
