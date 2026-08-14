@@ -4,7 +4,8 @@ import { getSettings, replaceRules, updateSettings, type SettingsStoragePort } f
 import { DEFAULT_SETTINGS } from '../../src/domain/settings/defaults';
 import { migrateSettings } from '../../src/domain/settings/migrations';
 import type { DownloadRule } from '../../src/domain/settings/types';
-import { ChromeStorageApi, ChromeStorageError } from '../../src/platform/chrome/storage-api';
+import { DownlyError } from '../../src/platform/chrome/downloads-api';
+import { ChromeStorageApi } from '../../src/platform/chrome/storage-api';
 
 const validRule: DownloadRule = {
   id: 'pdfs',
@@ -141,9 +142,34 @@ describe('ChromeStorageApi', () => {
     };
 
     await expect(new ChromeStorageApi(chrome).get('downlySettings')).rejects.toMatchObject({
-      name: 'ChromeStorageError',
-      code: 'chrome-storage-error',
+      name: 'DownlyError',
+      code: 'chrome-api-error',
       message: 'Storage unavailable',
-    } satisfies Partial<ChromeStorageError>);
+    } satisfies Partial<DownlyError>);
+  });
+
+  it('does not let callback-scoped lastError affect the next storage operation', async () => {
+    const runtime: { lastError?: { message?: string } } = { lastError: { message: 'Storage unavailable' } };
+    const chrome = {
+      runtime,
+      storage: {
+        local: {
+          get(_key: string, callback: (items: Record<string, unknown>) => void) {
+            try {
+              callback({ downlySettings: { theme: 'dark' } });
+            } finally {
+              delete runtime.lastError;
+            }
+          },
+          set(_items: Record<string, unknown>, callback: () => void) {
+            callback();
+          },
+        },
+      },
+    };
+    const storage = new ChromeStorageApi(chrome);
+
+    await expect(storage.get('downlySettings')).rejects.toMatchObject({ code: 'chrome-api-error' });
+    await expect(storage.get('downlySettings')).resolves.toEqual({ theme: 'dark' });
   });
 });

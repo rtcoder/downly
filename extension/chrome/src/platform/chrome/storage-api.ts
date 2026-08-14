@@ -1,14 +1,4 @@
-export type ChromeStorageErrorCode = 'chrome-storage-error';
-
-export class ChromeStorageError extends Error {
-  constructor(
-    public readonly code: ChromeStorageErrorCode,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ChromeStorageError';
-  }
-}
+import { DownlyError } from './downloads-api';
 
 type Callback<T> = (result: T) => void;
 
@@ -66,14 +56,14 @@ export class ChromeStorageApi {
     });
   }
 
-  private toStorageError(error: unknown): ChromeStorageError {
-    if (error instanceof ChromeStorageError) return error;
+  private toStorageError(error: unknown): DownlyError {
+    if (error instanceof DownlyError) return error;
 
     const message =
       typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
         ? error.message
         : 'Chrome storage API call failed.';
 
-    return new ChromeStorageError('chrome-storage-error', message);
+    return new DownlyError('chrome-api-error', message);
   }
 }
