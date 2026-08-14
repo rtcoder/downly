@@ -1,5 +1,7 @@
 import { useId } from 'react';
 
+import { t } from '../i18n';
+
 export interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -15,7 +17,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel = t('shared.confirm.cancel'),
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {

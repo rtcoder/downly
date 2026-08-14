@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 type SourceLike = {
   sourceDomain?: string | null;
   referrer?: string | null;
@@ -14,7 +16,7 @@ export function formatSourceDomain(source: SourceLike): string {
   return hostnameFromUrl(source.referrer)
     ?? hostnameFromUrl(source.finalUrl)
     ?? hostnameFromUrl(source.url)
-    ?? 'Unknown source';
+    ?? t('shared.formatters.unknownSource');
 }
 
 function cleanDomain(value: string | null | undefined): string | null {

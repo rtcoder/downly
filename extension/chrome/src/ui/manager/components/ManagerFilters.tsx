@@ -1,4 +1,5 @@
 import type { DownloadState, FileCategory } from '../../../domain/downloads/types';
+import { t, type I18nKey } from '../../shared/i18n';
 import { MANAGER_GROUPS, MANAGER_SORTS, type ManagerGroupKey, type ManagerSortKey } from './manager-options';
 
 export interface ManagerFilterState {
@@ -35,6 +36,16 @@ export interface ManagerFiltersProps {
 }
 
 const categories: FileCategory[] = ['image', 'video', 'audio', 'document', 'archive', 'installer', 'code', 'other'];
+const categoryLabelKeys: Record<FileCategory, I18nKey> = {
+  archive: 'manager.filters.category.archive',
+  audio: 'manager.filters.category.audio',
+  code: 'manager.filters.category.code',
+  document: 'manager.filters.category.document',
+  image: 'manager.filters.category.image',
+  installer: 'manager.filters.category.installer',
+  other: 'manager.filters.category.other',
+  video: 'manager.filters.category.video',
+};
 
 export function ManagerFilters({
   filters,
@@ -48,11 +59,11 @@ export function ManagerFilters({
     onFiltersChange({ ...filters, [key]: value });
   };
 
-  return <form aria-label="Manager query controls">
+  return <form aria-label={t('manager.filters.form')}>
     <label>
-      <span>Sort downloads</span>
+      <span>{t('manager.filters.sort')}</span>
       <select
-        aria-label="Sort downloads"
+        aria-label={t('manager.filters.sort')}
         onChange={(event) => onSortByChange(event.currentTarget.value as ManagerSortKey)}
         value={sortBy}
       >
@@ -60,9 +71,9 @@ export function ManagerFilters({
       </select>
     </label>
     <label>
-      <span>Group downloads</span>
+      <span>{t('manager.filters.group')}</span>
       <select
-        aria-label="Group downloads"
+        aria-label={t('manager.filters.group')}
         onChange={(event) => onGroupByChange(event.currentTarget.value as ManagerGroupKey)}
         value={groupBy}
       >
@@ -70,67 +81,67 @@ export function ManagerFilters({
       </select>
     </label>
     <label>
-      <span>State</span>
+      <span>{t('manager.filters.state')}</span>
       <select
-        aria-label="State filter"
+        aria-label={t('manager.filters.stateFilter')}
         onChange={(event) => update('state', event.currentTarget.value as ManagerFilterState['state'])}
         value={filters.state}
       >
-        <option value="">Any state</option>
-        <option value="in_progress">Active</option>
-        <option value="complete">Completed</option>
-        <option value="interrupted">Failed</option>
+        <option value="">{t('manager.filters.anyState')}</option>
+        <option value="in_progress">{t('manager.filters.active')}</option>
+        <option value="complete">{t('manager.filters.completed')}</option>
+        <option value="interrupted">{t('manager.filters.failed')}</option>
       </select>
     </label>
     <label>
-      <span>Category</span>
+      <span>{t('manager.filters.category')}</span>
       <select
-        aria-label="Category filter"
+        aria-label={t('manager.filters.categoryFilter')}
         onChange={(event) => update('category', event.currentTarget.value as ManagerFilterState['category'])}
         value={filters.category}
       >
-        <option value="">Any category</option>
-        {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+        <option value="">{t('manager.filters.anyCategory')}</option>
+        {categories.map((category) => <option key={category} value={category}>{t(categoryLabelKeys[category])}</option>)}
       </select>
     </label>
     <label>
-      <span>Extension</span>
+      <span>{t('manager.filters.extension')}</span>
       <input
-        aria-label="Extension filter"
+        aria-label={t('manager.filters.extensionFilter')}
         onChange={(event) => update('extension', event.currentTarget.value)}
         value={filters.extension}
       />
     </label>
     <label>
-      <span>Source domain</span>
+      <span>{t('manager.filters.sourceDomain')}</span>
       <input
-        aria-label="Source domain filter"
+        aria-label={t('manager.filters.sourceDomainFilter')}
         onChange={(event) => update('sourceDomain', event.currentTarget.value)}
         value={filters.sourceDomain}
       />
     </label>
     <label>
-      <span>Started after</span>
+      <span>{t('manager.filters.startedAfter')}</span>
       <input
-        aria-label="Started after filter"
+        aria-label={t('manager.filters.startedAfterFilter')}
         onChange={(event) => update('startedAfter', event.currentTarget.value)}
         type="date"
         value={filters.startedAfter}
       />
     </label>
     <label>
-      <span>Started before</span>
+      <span>{t('manager.filters.startedBefore')}</span>
       <input
-        aria-label="Started before filter"
+        aria-label={t('manager.filters.startedBeforeFilter')}
         onChange={(event) => update('startedBefore', event.currentTarget.value)}
         type="date"
         value={filters.startedBefore}
       />
     </label>
     <label>
-      <span>Minimum size</span>
+      <span>{t('manager.filters.minSize')}</span>
       <input
-        aria-label="Minimum size filter"
+        aria-label={t('manager.filters.minSizeFilter')}
         min="0"
         onChange={(event) => update('minSize', event.currentTarget.value)}
         type="number"
@@ -138,9 +149,9 @@ export function ManagerFilters({
       />
     </label>
     <label>
-      <span>Maximum size</span>
+      <span>{t('manager.filters.maxSize')}</span>
       <input
-        aria-label="Maximum size filter"
+        aria-label={t('manager.filters.maxSizeFilter')}
         min="0"
         onChange={(event) => update('maxSize', event.currentTarget.value)}
         type="number"
@@ -148,15 +159,15 @@ export function ManagerFilters({
       />
     </label>
     <label>
-      <span>File availability</span>
+      <span>{t('manager.filters.availability')}</span>
       <select
-        aria-label="File availability filter"
+        aria-label={t('manager.filters.availabilityFilter')}
         onChange={(event) => update('availability', event.currentTarget.value as ManagerFilterState['availability'])}
         value={filters.availability}
       >
-        <option value="">Any availability</option>
-        <option value="exists">File exists</option>
-        <option value="missing">File missing</option>
+        <option value="">{t('manager.filters.anyAvailability')}</option>
+        <option value="exists">{t('manager.filters.fileExists')}</option>
+        <option value="missing">{t('manager.filters.fileMissing')}</option>
       </select>
     </label>
   </form>;

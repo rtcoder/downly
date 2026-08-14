@@ -1,8 +1,10 @@
 import type { ActiveDownloadMetrics } from '../../../application/active-download-sampler';
 import type { DownloadActionService } from '../../../application/download-actions';
+import type { DownloadTimeGroupId } from '../../../domain/downloads/group-downloads';
 import type { DownloadRecord } from '../../../domain/downloads/types';
 import { groupDownloadsByTime } from '../../../domain/downloads/group-downloads';
 import { DownloadRow, EmptyState } from '../../shared';
+import { t, type I18nKey } from '../../shared/i18n';
 import type { ManagerGroupKey } from '../components/manager-options';
 
 export interface DownloadsViewProps {
@@ -25,20 +27,20 @@ export function DownloadsView({
   onAction,
 }: DownloadsViewProps) {
   if (loading) {
-    return <p>Loading downloads...</p>;
+    return <p>{t('manager.downloads.loading')}</p>;
   }
 
   if (downloads.length === 0) {
-    return <EmptyState title="No matching downloads" description="Adjust search or filters to see more history." />;
+    return <EmptyState title={t('manager.downloads.emptyTitle')} description={t('manager.downloads.emptyDescription')} />;
   }
 
   if (groupBy === 'none') {
-    return <section aria-label="Download list">
+    return <section aria-label={t('manager.downloads.list')}>
       {downloads.map((download) => renderRow(download, metrics, downloadActions, onAction))}
     </section>;
   }
 
-  return <section aria-label="Grouped downloads">
+  return <section aria-label={t('manager.downloads.groupedList')}>
     {groupsFor(downloads, groupBy, now).map((group) => (
       <section aria-label={group.label} key={group.label}>
         <h2>{group.label}</h2>
@@ -74,14 +76,17 @@ function renderRow(
 
 function groupsFor(downloads: DownloadRecord[], groupBy: ManagerGroupKey, now: Date) {
   if (groupBy === 'time') {
-    return groupDownloadsByTime(downloads, { now });
+    return groupDownloadsByTime(downloads, { now }).map((group) => ({
+      ...group,
+      label: t(timeGroupLabelKeys[group.id]),
+    }));
   }
 
   const grouped = new Map<string, DownloadRecord[]>();
   for (const download of downloads) {
     const label = groupBy === 'category'
       ? labelFor(download.category)
-      : download.sourceDomain || 'Unknown source';
+      : download.sourceDomain || t('manager.downloads.unknownSource');
     grouped.set(label, [...(grouped.get(label) ?? []), download]);
   }
 
@@ -91,6 +96,14 @@ function groupsFor(downloads: DownloadRecord[], groupBy: ManagerGroupKey, now: D
     downloads: groupedDownloads,
   }));
 }
+
+const timeGroupLabelKeys: Record<DownloadTimeGroupId, I18nKey> = {
+  today: 'manager.group.today',
+  yesterday: 'manager.group.yesterday',
+  'earlier-this-week': 'manager.group.earlierThisWeek',
+  'last-week': 'manager.group.lastWeek',
+  older: 'manager.group.older',
+};
 
 function labelFor(value: string): string {
   return `${value.charAt(0).toLocaleUpperCase()}${value.slice(1)}`;

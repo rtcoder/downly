@@ -10,6 +10,7 @@ import type { DownlySettings } from '../../../domain/settings/types';
 import { ChromeNativeUiOptionsApi, type NativeUiOptionsResult } from '../../../platform/chrome/native-ui-options-api';
 import { ChromeRuntimeApi } from '../../../platform/chrome/runtime-api';
 import { ChromeStorageApi } from '../../../platform/chrome/storage-api';
+import { t } from '../../shared/i18n';
 import { applyTheme } from '../../shared/theme';
 
 export interface SettingsViewProps {
@@ -46,7 +47,7 @@ export function SettingsView({
         applyTheme(loadedSettings.theme);
       })
       .catch((loadError: unknown) => {
-        if (active) setError(messageFromError(loadError, 'Settings could not be loaded.'));
+        if (active) setError(messageFromError(loadError, t('manager.settings.loadError')));
       });
 
     return () => {
@@ -74,7 +75,7 @@ export function SettingsView({
         await notifySettingsUpdated().catch(() => undefined);
       }
     } catch (saveError) {
-      setError(messageFromError(saveError, 'Settings could not be saved.'));
+      setError(messageFromError(saveError, t('manager.settings.saveError')));
     }
   }, [applyNativeUiOptions, storage]);
 
@@ -84,44 +85,44 @@ export function SettingsView({
   ].filter((message): message is { id: string; role: 'alert'; message: string } => message !== null), [error, warning]);
 
   if (!settings) {
-    return <section aria-label="Settings">
-      <h2>Settings</h2>
-      <p>Loading settings...</p>
+    return <section aria-label={t('manager.settings.title')}>
+      <h2>{t('manager.settings.title')}</h2>
+      <p>{t('manager.settings.loading')}</p>
     </section>;
   }
 
-  return <section aria-label="Settings">
-    <h2>Settings</h2>
+  return <section aria-label={t('manager.settings.title')}>
+    <h2>{t('manager.settings.title')}</h2>
 
     {statusMessages.map((message) => (
       <p key={message.id} role={message.role}>{message.message}</p>
     ))}
 
     <fieldset>
-      <legend>Appearance</legend>
+      <legend>{t('manager.settings.appearance')}</legend>
       <label>
-        Theme
+        {t('manager.settings.theme')}
         <select
-          aria-label="Theme"
+          aria-label={t('manager.settings.theme')}
           onChange={(event) => void persist({ theme: event.currentTarget.value as DownlySettings['theme'] })}
           value={settings.theme}
         >
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+          <option value="system">{t('manager.settings.theme.system')}</option>
+          <option value="light">{t('manager.settings.theme.light')}</option>
+          <option value="dark">{t('manager.settings.theme.dark')}</option>
         </select>
       </label>
     </fieldset>
 
     <fieldset>
-      <legend>Chrome integration</legend>
+      <legend>{t('manager.settings.chromeIntegration')}</legend>
       <label>
         <input
           checked={settings.replaceNativeDownloadsUi}
           onChange={(event) => void persist({ replaceNativeDownloadsUi: event.currentTarget.checked })}
           type="checkbox"
         />
-        Replace Chrome downloads UI
+        {t('manager.settings.replaceNativeUi')}
       </label>
       <label>
         <input
@@ -129,33 +130,33 @@ export function SettingsView({
           onChange={(event) => void persist({ showActiveCountBadge: event.currentTarget.checked })}
           type="checkbox"
         />
-        Show active download count badge
+        {t('manager.settings.showBadge')}
       </label>
     </fieldset>
 
     <fieldset>
-      <legend>Downloads</legend>
+      <legend>{t('manager.settings.downloads')}</legend>
       <label>
-        When a filename already exists
+        {t('manager.settings.filenameConflict')}
         <select
-          aria-label="When a filename already exists"
+          aria-label={t('manager.settings.filenameConflict')}
           onChange={(event) => void persist({ conflictAction: event.currentTarget.value as DownlySettings['conflictAction'] })}
           value={settings.conflictAction}
         >
-          <option value="uniquify">Keep both files</option>
-          <option value="overwrite">Overwrite existing files</option>
-          <option value="prompt">Ask each time</option>
+          <option value="uniquify">{t('manager.settings.conflict.keepBoth')}</option>
+          <option value="overwrite">{t('manager.settings.conflict.overwrite')}</option>
+          <option value="prompt">{t('manager.settings.conflict.prompt')}</option>
         </select>
       </label>
     </fieldset>
 
-    <section aria-label="Privacy">
-      <h3>Privacy</h3>
-      <p>Downly stores settings in your local browser profile.</p>
-      <p>Downly uses Chrome download history to power search and organization, and does not upload your history or files.</p>
+    <section aria-label={t('manager.settings.privacy')}>
+      <h3>{t('manager.settings.privacy')}</h3>
+      <p>{t('manager.settings.localStorage')}</p>
+      <p>{t('manager.settings.historyUse')}</p>
     </section>
 
-    <p>Version {version}</p>
+    <p>{t('manager.settings.version', { version })}</p>
   </section>;
 }
 
@@ -164,7 +165,7 @@ function defaultVersion(): string {
     chrome?: ConstructorParameters<typeof ChromeRuntimeApi>[0];
   }).chrome;
 
-  return chromeApi?.runtime?.getManifest ? new ChromeRuntimeApi(chromeApi).getVersion() : 'unknown';
+  return chromeApi?.runtime?.getManifest ? new ChromeRuntimeApi(chromeApi).getVersion() : t('manager.settings.unknownVersion');
 }
 
 async function notifySettingsUpdated(): Promise<void> {

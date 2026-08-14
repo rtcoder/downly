@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { getDownloadActionAvailability } from '../../../application/download-actions';
 import type { DownloadRecord } from '../../../domain/downloads/types';
+import { t } from '../i18n';
 import { ConfirmDialog } from './ConfirmDialog';
 import { displayFilename } from './download-helpers';
 
@@ -53,74 +54,74 @@ export function DownloadActions({
   };
 
   return <>
-    <div aria-label={`Actions for ${filename}`}>
+    <div aria-label={t('shared.downloadActions.actionsFor', { filename })}>
     {availability.canPause && onPause ? (
-      <button type="button" onClick={() => onPause(download.id)} aria-label={`Pause ${filename}`}>Pause</button>
+      <button type="button" onClick={() => onPause(download.id)} aria-label={t('shared.downloadActions.pauseLabel', { filename })}>{t('shared.downloadActions.pause')}</button>
     ) : null}
     {availability.canResume && onResume ? (
-      <button type="button" onClick={() => onResume(download.id)} aria-label={`Resume ${filename}`}>Resume</button>
+      <button type="button" onClick={() => onResume(download.id)} aria-label={t('shared.downloadActions.resumeLabel', { filename })}>{t('shared.downloadActions.resume')}</button>
     ) : null}
     {availability.canCancel && onCancel ? (
-      <button type="button" onClick={() => onCancel(download.id)} aria-label={`Cancel ${filename}`}>Cancel</button>
+      <button type="button" onClick={() => onCancel(download.id)} aria-label={t('shared.downloadActions.cancelLabel', { filename })}>{t('shared.downloadActions.cancel')}</button>
     ) : null}
     {availability.canRetry && !download.canResume && onRetry ? (
-      <button type="button" onClick={() => onRetry(download.id)} aria-label={`Retry ${filename}`}>Retry</button>
+      <button type="button" onClick={() => onRetry(download.id)} aria-label={t('shared.downloadActions.retryLabel', { filename })}>{t('shared.downloadActions.retry')}</button>
     ) : null}
     {availability.canDownloadAgain && onDownloadAgain ? (
-      <button type="button" onClick={() => onDownloadAgain(download.id)} aria-label={`Download ${filename} again`}>
-        Download again
+      <button type="button" onClick={() => onDownloadAgain(download.id)} aria-label={t('shared.downloadActions.downloadAgainLabel', { filename })}>
+        {t('shared.downloadActions.downloadAgain')}
       </button>
     ) : null}
     {availability.canOpen && onOpen ? (
-      <button type="button" onClick={() => onOpen(download.id)} aria-label={`Open ${filename}`}>Open</button>
+      <button type="button" onClick={() => onOpen(download.id)} aria-label={t('shared.downloadActions.openLabel', { filename })}>{t('shared.downloadActions.open')}</button>
     ) : null}
     {availability.canShowInFolder && onShowInFolder ? (
-      <button type="button" onClick={() => onShowInFolder(download.id)} aria-label={`Show ${filename} in folder`}>
-        Show in folder
+      <button type="button" onClick={() => onShowInFolder(download.id)} aria-label={t('shared.downloadActions.showInFolderLabel', { filename })}>
+        {t('shared.downloadActions.showInFolder')}
       </button>
     ) : null}
     {availability.canCopySourceUrl && onCopySourceUrl ? (
-      <button type="button" onClick={() => onCopySourceUrl(download.id)} aria-label={`Copy source URL for ${filename}`}>
-        Copy source URL
+      <button type="button" onClick={() => onCopySourceUrl(download.id)} aria-label={t('shared.downloadActions.copySourceUrlLabel', { filename })}>
+        {t('shared.downloadActions.copySourceUrl')}
       </button>
     ) : null}
     {availability.canCopyFinalUrl && onCopyFinalUrl ? (
-      <button type="button" onClick={() => onCopyFinalUrl(download.id)} aria-label={`Copy final URL for ${filename}`}>
-        Copy final URL
+      <button type="button" onClick={() => onCopyFinalUrl(download.id)} aria-label={t('shared.downloadActions.copyFinalUrlLabel', { filename })}>
+        {t('shared.downloadActions.copyFinalUrl')}
       </button>
     ) : null}
     {availability.canEraseHistory && onEraseHistory ? (
       <button
         type="button"
         onClick={() => setPendingConfirmation('erase-history')}
-        aria-label={`Remove ${filename} from history`}
+        aria-label={t('shared.downloadActions.removeFromHistoryLabel', { filename })}
       >
-        Remove from history
+        {t('shared.downloadActions.removeFromHistory')}
       </button>
     ) : null}
     {availability.canRemoveFile && onRemoveFile ? (
       <button
         type="button"
         onClick={() => setPendingConfirmation('remove-file')}
-        aria-label={`Delete file ${filename}`}
+        aria-label={t('shared.downloadActions.deleteFileLabel', { filename })}
       >
-        Delete file
+        {t('shared.downloadActions.deleteFile')}
       </button>
     ) : null}
     </div>
     <ConfirmDialog
       open={pendingConfirmation === 'erase-history'}
-      title={`Remove ${filename} from history?`}
-      description="This removes the entry from Chrome download history. The file stays on disk."
-      confirmLabel="Remove from history"
+      title={t('shared.downloadActions.removeHistoryTitle', { filename })}
+      description={t('shared.downloadActions.removeHistoryDescription')}
+      confirmLabel={t('shared.downloadActions.removeFromHistory')}
       onConfirm={confirm}
       onCancel={() => setPendingConfirmation(null)}
     />
     <ConfirmDialog
       open={pendingConfirmation === 'remove-file'}
-      title={`Delete ${filename} from disk?`}
-      description="This deletes the downloaded file from disk. The history entry remains unless you remove it separately."
-      confirmLabel="Delete file"
+      title={t('shared.downloadActions.deleteFileTitle', { filename })}
+      description={t('shared.downloadActions.deleteFileDescription')}
+      confirmLabel={t('shared.downloadActions.deleteFile')}
       onConfirm={confirm}
       onCancel={() => setPendingConfirmation(null)}
     />

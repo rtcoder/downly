@@ -1,6 +1,8 @@
+import { t } from '../i18n';
+
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
 
-export function formatBytes(value: number | null | undefined, fallback = 'Unknown size'): string {
+export function formatBytes(value: number | null | undefined, fallback = t('shared.formatters.unknownSize')): string {
   if (value === null || value === undefined || !Number.isFinite(value) || value < 0) {
     return fallback;
   }

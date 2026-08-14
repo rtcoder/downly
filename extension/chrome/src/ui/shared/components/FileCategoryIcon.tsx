@@ -1,14 +1,15 @@
 import type { FileCategory } from '../../../domain/downloads/types';
+import { t } from '../i18n';
 
 const CATEGORY_LABELS: Record<FileCategory, string> = {
-  archive: 'Archive file',
-  audio: 'Audio file',
-  code: 'Code file',
-  document: 'Document file',
-  image: 'Image file',
-  installer: 'Installer file',
-  other: 'File',
-  video: 'Video file',
+  archive: t('shared.fileCategory.archive'),
+  audio: t('shared.fileCategory.audio'),
+  code: t('shared.fileCategory.code'),
+  document: t('shared.fileCategory.document'),
+  image: t('shared.fileCategory.image'),
+  installer: t('shared.fileCategory.installer'),
+  other: t('shared.fileCategory.other'),
+  video: t('shared.fileCategory.video'),
 };
 
 const CATEGORY_SYMBOLS: Record<FileCategory, string> = {

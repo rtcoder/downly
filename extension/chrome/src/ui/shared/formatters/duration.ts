@@ -1,6 +1,8 @@
+import { t } from '../i18n';
+
 export function formatDuration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
-    return 'Unknown time';
+    return t('shared.formatters.unknownTime');
   }
 
   const totalSeconds = Math.round(seconds);
@@ -21,8 +23,8 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 export function formatEta(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
-    return 'ETA unknown';
+    return t('shared.formatters.etaUnknown');
   }
 
-  return `ETA ${formatDuration(seconds)}`;
+  return t('shared.formatters.eta', { duration: formatDuration(seconds) });
 }

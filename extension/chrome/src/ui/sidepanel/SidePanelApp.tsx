@@ -7,6 +7,7 @@ import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
 import { ChromeRuntimeApi } from '../../platform/chrome/runtime-api';
 import { DownloadRow, EmptyState, SearchInput, ToastRegion } from '../shared';
 import { useActiveDownloadPolling, useDownloads, type RuntimeMessageSource } from '../shared/hooks';
+import { t } from '../shared/i18n';
 
 export type { RuntimeMessageSource };
 
@@ -46,19 +47,19 @@ export function SidePanelApp({
 
   return <main>
     <header>
-      <h1>Downloads</h1>
-      <p aria-label="Active downloads">{activeDownloads.length} active</p>
-      <button type="button" onClick={openManager}>Open full manager</button>
+      <h1>{t('sidePanel.title')}</h1>
+      <p aria-label={t('sidePanel.activeDownloads')}>{t('sidePanel.activeDownloadsValue', { count: activeDownloads.length })}</p>
+      <button type="button" onClick={openManager}>{t('sidePanel.openManager')}</button>
     </header>
     <SearchInput value={search} onChange={setSearch} />
-    {loading ? <p>Loading downloads...</p> : null}
+    {loading ? <p>{t('manager.downloads.loading')}</p> : null}
     {!loading && visibleDownloads.length === 0 ? (
       <EmptyState
-        title={downloads.length === 0 ? 'No downloads' : 'No matching downloads'}
-        description={downloads.length === 0 ? 'Downloads you start will appear here.' : 'Try a different search.'}
+        title={downloads.length === 0 ? t('sidePanel.noDownloadsTitle') : t('sidePanel.noMatchesTitle')}
+        description={downloads.length === 0 ? t('sidePanel.noDownloadsDescription') : t('sidePanel.noMatchesDescription')}
       />
     ) : null}
-    <section aria-label="Download list">
+    <section aria-label={t('manager.downloads.list')}>
       {visibleDownloads.map((download) => (
         <DownloadRow
           download={download}
@@ -152,5 +153,5 @@ function messageFromError(error: unknown): string {
     return error.message;
   }
 
-  return 'Download action failed.';
+  return t('shared.downloadActions.failure');
 }

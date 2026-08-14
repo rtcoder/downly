@@ -8,6 +8,7 @@ import { BUILT_IN_ORGANIZER_PRESETS } from '../../../domain/organizer/presets';
 import type { ConflictAction, DownloadRule, RuleCondition, RuleField, RuleOperator } from '../../../domain/organizer/types';
 import type { DownlySettings } from '../../../domain/settings/types';
 import { EmptyState, ToastRegion } from '../../shared';
+import { t } from '../../shared/i18n';
 
 export interface OrganizerViewProps {
   previewDownload?: DownloadRecord | null;
@@ -17,20 +18,20 @@ type DraftRule = Omit<DownloadRule, 'conditions'> & { conditions: DraftCondition
 type DraftCondition = Omit<RuleCondition, 'value'> & { value: string };
 
 const FIELDS: Array<{ id: RuleField; label: string }> = [
-  { id: 'sourceDomain', label: 'Source domain' },
-  { id: 'filename', label: 'Filename' },
-  { id: 'extension', label: 'Extension' },
-  { id: 'mime', label: 'MIME type' },
-  { id: 'category', label: 'File category' },
+  { id: 'sourceDomain', label: t('manager.organizer.field.sourceDomain') },
+  { id: 'filename', label: t('manager.organizer.field.filename') },
+  { id: 'extension', label: t('manager.organizer.field.extension') },
+  { id: 'mime', label: t('manager.organizer.field.mime') },
+  { id: 'category', label: t('manager.organizer.field.category') },
 ];
 
 const OPERATORS: Array<{ id: RuleOperator; label: string }> = [
-  { id: 'equals', label: 'equals' },
-  { id: 'endsWith', label: 'ends with' },
-  { id: 'contains', label: 'contains' },
-  { id: 'startsWith', label: 'starts with' },
-  { id: 'regex', label: 'matches regex' },
-  { id: 'oneOf', label: 'equals one of' },
+  { id: 'equals', label: t('manager.organizer.operator.equals') },
+  { id: 'endsWith', label: t('manager.organizer.operator.endsWith') },
+  { id: 'contains', label: t('manager.organizer.operator.contains') },
+  { id: 'startsWith', label: t('manager.organizer.operator.startsWith') },
+  { id: 'regex', label: t('manager.organizer.operator.regex') },
+  { id: 'oneOf', label: t('manager.organizer.operator.oneOf') },
 ];
 
 const OPERATORS_BY_FIELD: Record<RuleField, RuleOperator[]> = {
@@ -102,9 +103,9 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
   }, [editing, orderedRules, sampleDownload, settings]);
 
   if (!settings) {
-    return <section aria-label="Smart Organizer settings">
-      <h2>Smart Organizer</h2>
-      <p>Loading organizer settings...</p>
+    return <section aria-label={t('manager.organizer.settings')}>
+      <h2>{t('manager.organizer.title')}</h2>
+      <p>{t('manager.organizer.loading')}</p>
       <OrganizerNotifications message={storageError} onDismiss={() => setStorageError(null)} />
     </section>;
   }
@@ -169,7 +170,10 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
     setValidationError(null);
     const unsupportedCondition = candidate.conditions.find((condition) => !operatorIsSupported(condition.field, condition.operator));
     if (unsupportedCondition) {
-      setValidationError(`${labelForField(unsupportedCondition.field)} does not support ${labelForOperator(unsupportedCondition.operator)}.`);
+      setValidationError(t('manager.organizer.unsupportedOperator', {
+        field: labelForField(unsupportedCondition.field),
+        operator: labelForOperator(unsupportedCondition.operator),
+      }));
       return;
     }
 
@@ -227,52 +231,54 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
     return rules;
   };
 
-  return <section aria-label="Smart Organizer settings">
+  return <section aria-label={t('manager.organizer.settings')}>
     <header>
-      <h2>Smart Organizer</h2>
+      <h2>{t('manager.organizer.title')}</h2>
       <label>
         <input
           checked={settings.organizerEnabled}
           onChange={(event) => void saveSettings({ organizerEnabled: event.target.checked })}
           type="checkbox"
         />
-        Enable Smart Organizer
+        {t('manager.organizer.enable')}
       </label>
       <label>
-        <span>Conflict action</span>
+        <span>{t('manager.organizer.conflictAction')}</span>
         <select
-          aria-label="Conflict action"
+          aria-label={t('manager.organizer.conflictAction')}
           onChange={(event) => void saveSettings({ conflictAction: event.target.value as ConflictAction })}
           value={settings.conflictAction}
         >
-          <option value="uniquify">uniquify</option>
-          <option value="overwrite">overwrite</option>
-          <option value="prompt">prompt</option>
+          <option value="uniquify">{t('manager.organizer.conflict.uniquify')}</option>
+          <option value="overwrite">{t('manager.organizer.conflict.overwrite')}</option>
+          <option value="prompt">{t('manager.organizer.conflict.prompt')}</option>
         </select>
       </label>
     </header>
 
-    <section aria-label="Organizer presets">
-      <h3>Presets</h3>
+    <section aria-label={t('manager.organizer.presets')}>
+      <h3>{t('manager.organizer.presets')}</h3>
       {BUILT_IN_ORGANIZER_PRESETS.map((preset) => (
         <button key={preset.id} onClick={() => void installPreset(preset)} type="button">
-          {orderedRules.some((rule) => rule.id === preset.id) ? 'Enable' : 'Install'} {preset.name} preset
+          {orderedRules.some((rule) => rule.id === preset.id)
+            ? t('manager.organizer.enablePreset', { name: preset.name })
+            : t('manager.organizer.installPreset', { name: preset.name })}
         </button>
       ))}
     </section>
 
-    <section aria-label="Organizer rules">
+    <section aria-label={t('manager.organizer.rules')}>
       <header>
-        <h3>Rules</h3>
-        <button onClick={startNewRule} type="button">New custom rule</button>
+        <h3>{t('manager.organizer.rules')}</h3>
+        <button onClick={startNewRule} type="button">{t('manager.organizer.newRule')}</button>
       </header>
       {orderedRules.length === 0 ? (
-        <EmptyState title="No organizer rules" description="Install a preset or create a custom rule to route future downloads." />
+        <EmptyState title={t('manager.organizer.emptyRulesTitle')} description={t('manager.organizer.emptyRulesDescription')} />
       ) : (
         orderedRules.map((rule, index) => (
           <article
             aria-grabbed={draggedRuleId === rule.id ? 'true' : undefined}
-            aria-label={`${rule.name} rule`}
+            aria-label={t('manager.organizer.ruleLabel', { name: rule.name })}
             draggable
             key={rule.id}
             onDragEnd={() => setDraggedRuleId(null)}
@@ -287,18 +293,18 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
                 onChange={() => toggleRule(rule.id)}
                 type="checkbox"
               />
-              Enable {rule.name}
+              {t('manager.organizer.enableRule', { name: rule.name })}
             </label>
             <p>{describeConditions(rule.conditions)}</p>
             <p>{rule.targetPathTemplate}</p>
             <button disabled={index === 0} onClick={() => moveRule(rule.id, -1)} type="button">
-              Move {rule.name} up
+              {t('manager.organizer.moveUp', { name: rule.name })}
             </button>
             <button disabled={index === orderedRules.length - 1} onClick={() => moveRule(rule.id, 1)} type="button">
-              Move {rule.name} down
+              {t('manager.organizer.moveDown', { name: rule.name })}
             </button>
-            <button onClick={() => startEditRule(rule)} type="button">Edit {rule.name}</button>
-            <button onClick={() => deleteRule(rule.id)} type="button">Delete {rule.name}</button>
+            <button onClick={() => startEditRule(rule)} type="button">{t('manager.organizer.editRule', { name: rule.name })}</button>
+            <button onClick={() => deleteRule(rule.id)} type="button">{t('manager.organizer.deleteRule', { name: rule.name })}</button>
           </article>
         ))
       )}
@@ -344,15 +350,15 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
     });
   };
 
-  return <form aria-label="Rule editor" onSubmit={(event) => {
+  return <form aria-label={t('manager.organizer.ruleEditor')} onSubmit={(event) => {
     event.preventDefault();
     onSave();
   }}>
-    <h3>{draft.name ? `Edit ${draft.name}` : 'New custom rule'}</h3>
+    <h3>{draft.name ? t('manager.organizer.editNamedRule', { name: draft.name }) : t('manager.organizer.newRule')}</h3>
     <label>
-      <span>Rule name</span>
+      <span>{t('manager.organizer.ruleName')}</span>
       <input
-        aria-label="Rule name"
+        aria-label={t('manager.organizer.ruleName')}
         onChange={(event) => onChange({ ...draft, name: event.target.value })}
         value={draft.name}
       />
@@ -363,17 +369,17 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
         onChange={(event) => onChange({ ...draft, enabled: event.target.checked })}
         type="checkbox"
       />
-      Rule enabled
+      {t('manager.organizer.ruleEnabled')}
     </label>
 
     <fieldset>
-      <legend>AND conditions</legend>
+      <legend>{t('manager.organizer.conditionsLegend')}</legend>
       {draft.conditions.map((condition, index) => (
-        <section aria-label={`Condition ${index + 1}`} key={index}>
+        <section aria-label={t('manager.organizer.conditionLabel', { number: index + 1 })} key={index}>
           <label>
-            <span>Field</span>
+            <span>{t('manager.organizer.field')}</span>
             <select
-              aria-label={`Condition field ${index + 1}`}
+              aria-label={t('manager.organizer.conditionFieldLabel', { number: index + 1 })}
               onChange={(event) => updateCondition(index, { field: event.target.value as RuleField })}
               value={condition.field}
             >
@@ -381,9 +387,9 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
             </select>
           </label>
           <label>
-            <span>Operator</span>
+            <span>{t('manager.organizer.operator')}</span>
             <select
-              aria-label={`Condition operator ${index + 1}`}
+              aria-label={t('manager.organizer.conditionOperatorLabel', { number: index + 1 })}
               onChange={(event) => updateCondition(index, { operator: event.target.value as RuleOperator })}
               value={condition.operator}
             >
@@ -391,9 +397,9 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
             </select>
           </label>
           <label>
-            <span>Value</span>
+            <span>{t('manager.organizer.value')}</span>
             <input
-              aria-label={`Condition value ${index + 1}`}
+              aria-label={t('manager.organizer.conditionValueLabel', { number: index + 1 })}
               onChange={(event) => updateCondition(index, { value: event.target.value })}
               value={condition.value}
             />
@@ -406,7 +412,7 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
             })}
             type="button"
           >
-            Remove condition {index + 1}
+            {t('manager.organizer.removeCondition', { number: index + 1 })}
           </button>
         </section>
       ))}
@@ -414,21 +420,21 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
         onClick={() => onChange({ ...draft, conditions: [...draft.conditions, { ...EMPTY_CONDITION }] })}
         type="button"
       >
-        Add AND condition
+        {t('manager.organizer.addCondition')}
       </button>
     </fieldset>
 
     <label>
-      <span>Target path template</span>
+      <span>{t('manager.organizer.targetPathTemplate')}</span>
       <input
-        aria-label="Target path template"
+        aria-label={t('manager.organizer.targetPathTemplate')}
         onChange={(event) => onChange({ ...draft, targetPathTemplate: event.target.value })}
         value={draft.targetPathTemplate}
       />
     </label>
     {validationError ? <p role="alert">{validationError}</p> : null}
-    <button type="submit">Save rule</button>
-    <button onClick={onCancel} type="button">Cancel</button>
+    <button type="submit">{t('manager.organizer.saveRule')}</button>
+    <button onClick={onCancel} type="button">{t('manager.organizer.cancel')}</button>
   </form>;
 }
 
@@ -441,18 +447,18 @@ function PathPreview({
   preview: ReturnType<typeof evaluateRules>;
   sampleDownload: DownloadRecord;
 }) {
-  return <section aria-label="Target path preview">
-    <h3>Target path preview</h3>
-    <p>Sample: {sampleDownload.filename}</p>
+  return <section aria-label={t('manager.organizer.preview')}>
+    <h3>{t('manager.organizer.preview')}</h3>
+    <p>{t('manager.organizer.sample', { filename: sampleDownload.filename })}</p>
     {preview ? (
       <>
         <p>{preview.filename}</p>
-        <p>Matched rule: {preview.ruleId}</p>
+        <p>{t('manager.organizer.matchedRule', { ruleId: preview.ruleId })}</p>
       </>
     ) : (
-      <p>No enabled rule matches this sample.</p>
+      <p>{t('manager.organizer.noPreviewMatch')}</p>
     )}
-    <p>Conflict action: {conflictAction}</p>
+    <p>{t('manager.organizer.conflictActionValue', { action: conflictAction })}</p>
   </section>;
 }
 
@@ -476,7 +482,7 @@ function toDraft(rule: DownloadRule): DraftRule {
 function fromDraft(draft: DraftRule): DownloadRule {
   return {
     ...draft,
-    name: draft.name.trim() || 'Untitled rule',
+    name: draft.name.trim() || t('manager.organizer.untitledRule'),
     targetPathTemplate: draft.targetPathTemplate.trim(),
     conditions: draft.conditions.map((condition) => ({
       field: condition.field,
@@ -540,5 +546,5 @@ function labelForOperator(operator: RuleOperator): string {
 }
 
 function messageFromError(error: unknown): string {
-  return error instanceof Error ? error.message : 'Organizer settings could not be saved.';
+  return error instanceof Error ? error.message : t('manager.organizer.saveError');
 }

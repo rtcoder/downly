@@ -1,15 +1,17 @@
+import { t } from '../i18n';
+
 export interface DateTimeFormatOptions {
   timeZone?: string;
 }
 
 export function formatDateTime(value: string | null | undefined, options: DateTimeFormatOptions = {}): string {
   if (!value) {
-    return 'Unknown date';
+    return t('shared.formatters.unknownDate');
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return 'Unknown date';
+    return t('shared.formatters.unknownDate');
   }
 
   return new Intl.DateTimeFormat('en-US', {

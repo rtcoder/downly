@@ -17,7 +17,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Downly - Downloads"
+    "default_title": "__MSG_extensionActionTitle__"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
@@ -34,7 +34,7 @@
   },
   "commands": {
     "open-downly-manager": {
-      "description": "Open Downly Download Manager"
+      "description": "__MSG_openDownlyManagerCommandDescription__"
     }
   }
 }

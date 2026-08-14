@@ -4,5 +4,11 @@
   },
   "extensionDescription": {
     "message": "A private, local Chrome download manager."
+  },
+  "extensionActionTitle": {
+    "message": "Downly - Downloads"
+  },
+  "openDownlyManagerCommandDescription": {
+    "message": "Open Downly Download Manager"
   }
 }

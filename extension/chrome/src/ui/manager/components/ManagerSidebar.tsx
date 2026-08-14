@@ -1,4 +1,5 @@
 import { MANAGER_VIEWS, type ManagerView } from './manager-options';
+import { t } from '../../shared/i18n';
 
 export interface ManagerSidebarProps {
   activeView: ManagerView;
@@ -6,7 +7,7 @@ export interface ManagerSidebarProps {
 }
 
 export function ManagerSidebar({ activeView, onViewChange }: ManagerSidebarProps) {
-  return <nav aria-label="Manager views">
+  return <nav aria-label={t('manager.sidebar.label')}>
     {MANAGER_VIEWS.map((view) => (
       <button
         aria-current={activeView === view.id ? 'page' : undefined}

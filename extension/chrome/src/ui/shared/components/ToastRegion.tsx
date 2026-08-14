@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 export interface ToastMessage {
   id: string;
   message: string;
@@ -10,13 +12,13 @@ export interface ToastRegionProps {
 }
 
 export function ToastRegion({ messages, onDismiss }: ToastRegionProps) {
-  return <div aria-live="polite" aria-label="Notifications" role="status">
+  return <div aria-live="polite" aria-label={t('shared.notifications')} role="status">
     {messages.map((message) => (
       <div key={message.id} data-tone={message.tone ?? 'info'}>
         <span>{message.message}</span>
         {onDismiss ? (
-          <button type="button" onClick={() => onDismiss(message.id)} aria-label={`Dismiss ${message.message}`}>
-            Dismiss
+          <button type="button" onClick={() => onDismiss(message.id)} aria-label={t('shared.dismissLabel', { message: message.message })}>
+            {t('shared.dismiss')}
           </button>
         ) : null}
       </div>

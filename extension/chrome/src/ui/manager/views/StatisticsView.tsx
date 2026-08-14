@@ -5,6 +5,7 @@ import { STATS_RANGES, type DownloadStats, type StatsPeriodBucket, type StatsRan
 import type { DownloadRecord } from '../../../domain/downloads/types';
 import { EmptyState } from '../../shared';
 import { formatBytes } from '../../shared/formatters';
+import { t, type I18nKey } from '../../shared/i18n';
 
 export interface StatisticsViewProps {
   downloads: DownloadRecord[];
@@ -18,22 +19,19 @@ export function StatisticsView({ downloads, now }: StatisticsViewProps) {
     [downloads, now, range],
   );
 
-  return <section aria-label="Download statistics">
+  return <section aria-label={t('manager.statistics.section')}>
     <header>
-      <h2>Statistics</h2>
-      <p>
-        These statistics reflect the Chrome download history available to Downly.
-        If browser download history is cleared, that data is no longer available to these reports.
-      </p>
+      <h2>{t('manager.statistics.title')}</h2>
+      <p>{t('manager.statistics.description')}</p>
       <label>
-        <span>Statistics range</span>
+        <span>{t('manager.statistics.range')}</span>
         <select
-          aria-label="Statistics range"
+          aria-label={t('manager.statistics.range')}
           onChange={(event) => setRange(event.target.value as StatsRange)}
           value={range}
         >
           {STATS_RANGES.map((option) => (
-            <option key={option.id} value={option.id}>{option.label}</option>
+            <option key={option.id} value={option.id}>{t(statsRangeLabelKeys[option.id])}</option>
           ))}
         </select>
       </label>
@@ -41,45 +39,53 @@ export function StatisticsView({ downloads, now }: StatisticsViewProps) {
 
     {stats.hasHistory ? (
       <>
-        <section aria-label="Statistic cards">
-          <StatCard label="Downloads today" value={formatNumber(stats.downloadsToday)} />
-          <StatCard label="Downloads this month" value={formatNumber(stats.downloadsThisMonth)} />
-          <StatCard label="Bytes downloaded this month" value={formatBytes(stats.bytesDownloadedThisMonth)} />
-          <StatCard label="Bytes downloaded in range" value={formatBytes(stats.range.bytesDownloaded)} />
-          <StatCard label="Completed count" value={formatNumber(stats.completedCount)} />
-          <StatCard label="Interrupted count" value={formatNumber(stats.interruptedCount)} />
+        <section aria-label={t('manager.statistics.cards')}>
+          <StatCard label={t('manager.statistics.downloadsToday')} value={formatNumber(stats.downloadsToday)} />
+          <StatCard label={t('manager.statistics.downloadsThisMonth')} value={formatNumber(stats.downloadsThisMonth)} />
+          <StatCard label={t('manager.statistics.bytesThisMonth')} value={formatBytes(stats.bytesDownloadedThisMonth)} />
+          <StatCard label={t('manager.statistics.bytesInRange')} value={formatBytes(stats.range.bytesDownloaded)} />
+          <StatCard label={t('manager.statistics.completedCount')} value={formatNumber(stats.completedCount)} />
+          <StatCard label={t('manager.statistics.interruptedCount')} value={formatNumber(stats.interruptedCount)} />
           <StatCard
-            label="Largest item"
-            value={stats.largestItem ? formatBytes(stats.largestItem.size) : 'None'}
+            label={t('manager.statistics.largestItem')}
+            value={stats.largestItem ? formatBytes(stats.largestItem.size) : t('manager.statistics.none')}
             detail={stats.largestItem ? stats.largestItem.basename || stats.largestItem.filename : undefined}
           />
           <StatCard
-            label="Top category"
-            value={stats.topCategory?.label ?? 'None'}
-            detail={stats.topCategory ? `${formatNumber(stats.topCategory.count)} downloads` : undefined}
+            label={t('manager.statistics.topCategory')}
+            value={stats.topCategory?.label ?? t('manager.statistics.none')}
+            detail={stats.topCategory ? t('manager.statistics.downloadCount', { count: formatNumber(stats.topCategory.count) }) : undefined}
           />
           <StatCard
-            label="Top domain"
-            value={stats.topDomain?.label ?? 'None'}
-            detail={stats.topDomain ? `${formatNumber(stats.topDomain.count)} downloads` : undefined}
+            label={t('manager.statistics.topDomain')}
+            value={stats.topDomain?.label ?? t('manager.statistics.none')}
+            detail={stats.topDomain ? t('manager.statistics.downloadCount', { count: formatNumber(stats.topDomain.count) }) : undefined}
           />
         </section>
 
-        <section aria-label="Statistics charts">
+        <section aria-label={t('manager.statistics.charts')}>
           <BytesChart buckets={stats.bytesByPeriod} />
-          <TopItemsTable title="Count by category" items={stats.countByCategory} />
-          <TopItemsTable title="Count by source domain" items={stats.countByDomain} />
+          <TopItemsTable title={t('manager.statistics.countByCategory')} items={stats.countByCategory} />
+          <TopItemsTable title={t('manager.statistics.countByDomain')} items={stats.countByDomain} />
           <StateChart stats={stats} />
         </section>
       </>
     ) : (
       <EmptyState
-        title="Empty history"
-        description="Downly cannot calculate statistics until Chrome has available download history."
+        title={t('manager.statistics.emptyTitle')}
+        description={t('manager.statistics.emptyDescription')}
       />
     )}
   </section>;
 }
+
+const statsRangeLabelKeys: Record<StatsRange, I18nKey> = {
+  '7-days': 'manager.statistics.range.7Days',
+  '30-days': 'manager.statistics.range.30Days',
+  '90-days': 'manager.statistics.range.90Days',
+  '1-year': 'manager.statistics.range.1Year',
+  all: 'manager.statistics.range.all',
+};
 
 interface StatCardProps {
   label: string;
@@ -100,10 +106,10 @@ function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
   const width = Math.max(240, buckets.length * 44);
   const height = 120;
 
-  return <figure aria-label="Downloaded bytes by period">
-    <figcaption>Downloaded bytes by period</figcaption>
+  return <figure aria-label={t('manager.statistics.bytesByPeriod')}>
+    <figcaption>{t('manager.statistics.bytesByPeriod')}</figcaption>
     {buckets.length === 0 ? (
-      <p>No downloads in this range.</p>
+      <p>{t('manager.statistics.noDownloadsInRange')}</p>
     ) : (
       <>
         <svg aria-hidden="true" focusable="false" height={height} viewBox={`0 0 ${width} ${height}`} width={width}>
@@ -121,12 +127,12 @@ function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
             </g>;
           })}
         </svg>
-        <table aria-label="Downloaded bytes by period data">
+        <table aria-label={t('manager.statistics.bytesByPeriodData')}>
           <thead>
             <tr>
-              <th scope="col">Period</th>
-              <th scope="col">Downloads</th>
-              <th scope="col">Bytes</th>
+              <th scope="col">{t('manager.statistics.period')}</th>
+              <th scope="col">{t('manager.statistics.downloads')}</th>
+              <th scope="col">{t('manager.statistics.bytes')}</th>
             </tr>
           </thead>
           <tbody>
@@ -150,14 +156,14 @@ function TopItemsTable({ title, items }: { title: string; items: StatsTopItem[] 
   return <section aria-label={title}>
     <h3>{title}</h3>
     {items.length === 0 ? (
-      <p>No downloads in this range.</p>
+      <p>{t('manager.statistics.noDownloadsInRange')}</p>
     ) : (
       <table aria-label={title}>
         <thead>
           <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Count</th>
-            <th scope="col">Share</th>
+            <th scope="col">{t('manager.statistics.name')}</th>
+            <th scope="col">{t('manager.statistics.count')}</th>
+            <th scope="col">{t('manager.statistics.share')}</th>
           </tr>
         </thead>
         <tbody>
@@ -179,23 +185,23 @@ function TopItemsTable({ title, items }: { title: string; items: StatsTopItem[] 
 function StateChart({ stats }: { stats: DownloadStats }) {
   const total = stats.stateCounts.completed + stats.stateCounts.interrupted + stats.stateCounts.inProgress;
 
-  return <section aria-label="Completed vs interrupted">
-    <h3>Completed vs interrupted</h3>
+  return <section aria-label={t('manager.statistics.completedVsInterrupted')}>
+    <h3>{t('manager.statistics.completedVsInterrupted')}</h3>
     {total === 0 ? (
-      <p>No downloads in this range.</p>
+      <p>{t('manager.statistics.noDownloadsInRange')}</p>
     ) : (
       <dl>
-        <dt>Completed</dt>
+        <dt>{t('manager.statistics.completed')}</dt>
         <dd>
           <meter max={total} min={0} value={stats.stateCounts.completed}>{stats.stateCounts.completed}</meter>
           {formatNumber(stats.stateCounts.completed)}
         </dd>
-        <dt>Interrupted</dt>
+        <dt>{t('manager.statistics.interrupted')}</dt>
         <dd>
           <meter max={total} min={0} value={stats.stateCounts.interrupted}>{stats.stateCounts.interrupted}</meter>
           {formatNumber(stats.stateCounts.interrupted)}
         </dd>
-        <dt>In progress</dt>
+        <dt>{t('manager.statistics.inProgress')}</dt>
         <dd>
           <meter max={total} min={0} value={stats.stateCounts.inProgress}>{stats.stateCounts.inProgress}</meter>
           {formatNumber(stats.stateCounts.inProgress)}

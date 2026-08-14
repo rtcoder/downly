@@ -1,4 +1,5 @@
 import type { DownloadRecord } from '../../../domain/downloads/types';
+import { t } from '../i18n';
 
 export interface DownloadStatusProps {
   download: DownloadRecord;
@@ -7,25 +8,25 @@ export interface DownloadStatusProps {
 export function DownloadStatus({ download }: DownloadStatusProps) {
   const status = statusText(download);
 
-  return <div aria-label={`Status: ${status}`}>
+  return <div aria-label={t('shared.downloadStatus.label', { status })}>
     <span>{status}</span>
-    {download.paused ? <span>Paused</span> : null}
+    {download.paused ? <span>{t('shared.downloadStatus.paused')}</span> : null}
     {download.error ? <span>{download.error}</span> : null}
   </div>;
 }
 
 function statusText(download: DownloadRecord): string {
   if (!download.exists && download.state === 'complete') {
-    return 'Missing file';
+    return t('shared.downloadStatus.missingFile');
   }
 
   if (download.state === 'complete') {
-    return 'Complete';
+    return t('shared.downloadStatus.complete');
   }
 
   if (download.state === 'interrupted') {
-    return 'Interrupted';
+    return t('shared.downloadStatus.interrupted');
   }
 
-  return 'In progress';
+  return t('shared.downloadStatus.inProgress');
 }

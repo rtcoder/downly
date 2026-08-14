@@ -5,6 +5,7 @@ import {
 import type { DownloadRecord } from '../../../domain/downloads/types';
 import { EmptyState } from '../../shared';
 import { displayFilename } from '../../shared/components/download-helpers';
+import { t } from '../../shared/i18n';
 
 export interface DuplicatesViewProps {
   downloads: DownloadRecord[];
@@ -23,40 +24,40 @@ export function DuplicatesView({
   onShowMatchingDownload,
 }: DuplicatesViewProps) {
   if (loading) {
-    return <p>Loading possible duplicates...</p>;
+    return <p>{t('manager.duplicates.loading')}</p>;
   }
 
   const groups = groupPossibleDuplicates(downloads);
 
   if (groups.length === 0) {
     return <EmptyState
-      title="No possible duplicates"
-      description="Downly did not find possible duplicate downloads in the current list."
+      title={t('manager.duplicates.emptyTitle')}
+      description={t('manager.duplicates.emptyDescription')}
     />;
   }
 
-  return <section aria-label="Possible duplicate downloads">
+  return <section aria-label={t('manager.duplicates.section')}>
     {groups.map((group) => (
       <section
-        aria-label={`Possible duplicate ${displayFilename(group.candidate)}`}
+        aria-label={t('manager.duplicates.itemLabel', { filename: displayFilename(group.candidate) })}
         key={group.candidate.id}
       >
-        <p>Possible duplicate</p>
+        <p>{t('manager.duplicates.heading')}</p>
         <h2>{displayFilename(group.candidate)}</h2>
         <ol>
           {group.matches.map((match) => (
             <li key={match.item.id}>
               <strong>{displayFilename(match.item)}</strong>
-              <span>{match.confidence} confidence</span>
+              <span>{t('manager.duplicates.confidence', { confidence: match.confidence })}</span>
               <ul>
                 {match.reasons.map((reason) => <li key={reason}>{reason}</li>)}
               </ul>
               <button
-                aria-label={`Show matching download ${displayFilename(match.item)}`}
+                aria-label={t('manager.duplicates.showMatchLabel', { filename: displayFilename(match.item) })}
                 onClick={() => onShowMatchingDownload(match.item)}
                 type="button"
               >
-                Show matching download
+                {t('manager.duplicates.showMatch')}
               </button>
             </li>
           ))}

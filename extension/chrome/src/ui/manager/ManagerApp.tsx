@@ -9,6 +9,7 @@ import { sortDownloads } from '../../domain/downloads/sort-downloads';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
 import { SearchInput, ToastRegion } from '../shared';
 import { useActiveDownloadPolling } from '../shared/hooks';
+import { t } from '../shared/i18n';
 import {
   EMPTY_MANAGER_FILTERS,
   ManagerFilters,
@@ -101,26 +102,26 @@ export function ManagerApp({
 
   return <main>
     <header>
-      <h1>Downly Download Manager</h1>
-      <p aria-label="Loaded downloads">{downloads.length} loaded</p>
-      <p aria-label="Active downloads">{activeDownloads.length} active</p>
-      <button onClick={() => void refresh()} type="button">Refresh</button>
+      <h1>{t('manager.title')}</h1>
+      <p aria-label={t('manager.loadedDownloads')}>{t('manager.loadedDownloadsValue', { count: downloads.length })}</p>
+      <p aria-label={t('manager.activeDownloads')}>{t('manager.activeDownloadsValue', { count: activeDownloads.length })}</p>
+      <button onClick={() => void refresh()} type="button">{t('manager.refresh')}</button>
       <button
         aria-expanded={filtersOpen}
         aria-controls="manager-filters"
         onClick={() => setFiltersOpen((open) => !open)}
         type="button"
       >
-        Filters
+        {t('manager.filters.toggle')}
       </button>
     </header>
 
     <ManagerSidebar activeView={view} onViewChange={setView} />
 
-    <section aria-label="Download manager controls">
+    <section aria-label={t('manager.controls')}>
       <SearchInput value={search} onChange={setSearch} />
       {filtersOpen ? (
-        <aside aria-label="Download filters" id="manager-filters">
+        <aside aria-label={t('manager.filters.region')} id="manager-filters">
           <ManagerFilters
             filters={filters}
             groupBy={groupBy}
@@ -168,7 +169,7 @@ export function ManagerApp({
 
     <footer>
       <button disabled={!canLoadOlder || loading || loadingOlder} onClick={() => void loadOlder()} type="button">
-        Load older downloads
+        {t('manager.loadOlder')}
       </button>
     </footer>
     <ToastRegion
@@ -382,5 +383,5 @@ function messageFromError(error: unknown): string {
     return error.message;
   }
 
-  return 'Download action failed.';
+  return t('shared.downloadActions.failure');
 }
