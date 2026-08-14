@@ -77,6 +77,18 @@ describe('normalizeDownload', () => {
     expect(download.category).toBe('archive');
   });
 
+  it('uses other for unknown extensions without a specific MIME category', () => {
+    const download = normalizeDownload({
+      id: 13,
+      filename: 'payload.customext',
+      mime: 'application/octet-stream',
+      url: 'https://example.com/payload',
+      startTime: '2026-08-14T10:00:00.000Z',
+    });
+
+    expect(download.category).toBe('other');
+  });
+
   it('uses valid referrer, final URL, then original URL for source domain', () => {
     const referrerDomain = normalizeDownload({
       id: 8,
