@@ -55,6 +55,14 @@ export function createChromeMock(): ChromeMock {
     calls.push({ method, args });
   }
 
+  function complete<T>(callback: Callback<T>, result: T): void {
+    try {
+      callback(result);
+    } finally {
+      delete runtime.lastError;
+    }
+  }
+
   return {
     runtime,
     results,
@@ -62,23 +70,23 @@ export function createChromeMock(): ChromeMock {
     downloads: {
       search(query, callback) {
         record('search', [query]);
-        callback(results.search);
+        complete(callback, results.search);
       },
       pause(id, callback) {
         record('pause', [id]);
-        callback();
+        complete(callback, undefined);
       },
       resume(id, callback) {
         record('resume', [id]);
-        callback();
+        complete(callback, undefined);
       },
       cancel(id, callback) {
         record('cancel', [id]);
-        callback();
+        complete(callback, undefined);
       },
       open(id, callback) {
         record('open', [id]);
-        callback();
+        complete(callback, undefined);
       },
       show(id) {
         record('show', [id]);
@@ -88,15 +96,15 @@ export function createChromeMock(): ChromeMock {
       },
       removeFile(id, callback) {
         record('removeFile', [id]);
-        callback();
+        complete(callback, undefined);
       },
       erase(query, callback) {
         record('erase', [query]);
-        callback(results.erase);
+        complete(callback, results.erase);
       },
       download(options, callback) {
         record('download', [options]);
-        callback(results.download);
+        complete(callback, results.download);
       },
     },
   };

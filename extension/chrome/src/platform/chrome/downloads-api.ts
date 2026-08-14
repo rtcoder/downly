@@ -131,10 +131,6 @@ export class ChromeDownloadsApi implements DownloadsPort {
   private callSync(operation: () => void): void {
     try {
       operation();
-      const lastError = this.chromeApi.runtime?.lastError;
-      if (lastError) {
-        throw this.toDownlyError(lastError, 'chrome-api-error');
-      }
     } catch (error) {
       throw this.toDownlyError(error, 'chrome-api-error');
     }

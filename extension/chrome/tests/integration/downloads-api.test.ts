@@ -162,6 +162,42 @@ describe('ChromeDownloadsApi', () => {
     } satisfies Partial<DownlyError>);
   });
 
+  it('does not let callback lastError poison the next callback operation', async () => {
+    const chrome = createChromeMock();
+    const api = new ChromeDownloadsApi(chrome);
+    chrome.runtime.lastError = { message: 'Denied by Chrome' };
+
+    await expect(api.pause(41)).rejects.toMatchObject({ code: 'chrome-api-error' });
+    await expect(api.resume(41)).resolves.toBeUndefined();
+  });
+
+  it('does not read stale callback lastError for synchronous Chrome APIs', () => {
+    const chrome = createChromeMock();
+    chrome.runtime.lastError = { message: 'Previous callback error' };
+
+    expect(() => new ChromeDownloadsApi(chrome).show(41)).not.toThrow();
+  });
+
+  it('converts synchronous show exceptions to typed errors', () => {
+    const chrome = createChromeMock();
+    chrome.downloads.show = () => {
+      throw new Error('Unable to show download');
+    };
+
+    let thrown: unknown;
+    try {
+      new ChromeDownloadsApi(chrome).show(41);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toMatchObject({
+      name: 'DownlyError',
+      code: 'chrome-api-error',
+      message: 'Unable to show download',
+    } satisfies Partial<DownlyError>);
+  });
+
   it('rejects downloadAgain with a typed error when no URL is available', async () => {
     const chrome = createChromeMock();
 
