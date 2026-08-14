@@ -28,23 +28,29 @@ export function evaluateRules(
 
 function withFilename(path: string, record: DownloadRecord): string {
   const leafFilename = record.filename.split(/[\\/]/).at(-1) ?? '';
-  const templateHasFilename = path.includes(leafFilename);
   const normalizedPath = path.replace(/\\/g, '/');
+  const templateHasFilename = normalizedPath.includes(leafFilename);
   const lastSegment = normalizedPath.split('/').filter(Boolean).at(-1) ?? '';
   const sourceExtension = leafFilename.lastIndexOf('.') > 0 ? leafFilename.slice(leafFilename.lastIndexOf('.')) : '';
 
   if (!templateHasFilename && (!lastSegment || normalizedPath.endsWith('/'))) {
-    return `${path}${normalizedPath.endsWith('/') || !path ? '' : '/'}${leafFilename}`;
+    return `${normalizedPath}${normalizedPath.endsWith('/') || !normalizedPath ? '' : '/'}${leafFilename}`;
   }
 
-  if (!templateHasFilename && sourceExtension && !hasExtension(lastSegment)) {
-    return `${path}${sourceExtension}`;
+  if (!templateHasFilename && sourceExtension) {
+    const extensionStart = extensionStartFor(lastSegment);
+    if (extensionStart === -1) return `${normalizedPath}${sourceExtension}`;
+
+    const templateExtension = lastSegment.slice(extensionStart);
+    if (templateExtension.toLowerCase() !== sourceExtension.toLowerCase()) {
+      return `${normalizedPath.slice(0, -lastSegment.length)}${lastSegment.slice(0, extensionStart)}${sourceExtension}`;
+    }
   }
 
-  return path;
+  return normalizedPath;
 }
 
-function hasExtension(filename: string): boolean {
+function extensionStartFor(filename: string): number {
   const extensionStart = filename.lastIndexOf('.');
-  return extensionStart > 0 && extensionStart < filename.length - 1;
+  return extensionStart > 0 && extensionStart < filename.length - 1 ? extensionStart : -1;
 }

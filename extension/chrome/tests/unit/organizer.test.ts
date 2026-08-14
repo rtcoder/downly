@@ -136,9 +136,9 @@ describe('evaluateRules', () => {
     });
   });
 
-  it('keeps a deliberately different template extension without appending the source extension', () => {
+  it('replaces a different template extension with the original source extension', () => {
     expect(evaluateRules(record, [rule({ targetPathTemplate: 'Documents/{basename}.txt' })], 'uniquify')).toMatchObject({
-      filename: 'Documents/annual report.txt',
+      filename: 'Documents/annual report.PDF',
     });
   });
 
