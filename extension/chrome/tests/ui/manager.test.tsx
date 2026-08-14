@@ -157,6 +157,50 @@ describe('download manager', () => {
     expect(visibleRows()).toEqual(['Active.zip', 'Completed.pdf', 'Failed.dmg']);
   });
 
+  it('shows possible duplicate groups with confidence, reasons, and matching download action', async () => {
+    const original = download({
+      id: 1,
+      basename: 'Report',
+      filename: '/tmp/Report.pdf',
+      url: 'https://docs.example/report.pdf',
+      finalUrl: 'https://cdn.example/report.pdf',
+      startTime: '2026-08-14T10:00:00.000Z',
+    });
+    const recentMatch = download({
+      id: 2,
+      basename: 'Report',
+      filename: '/tmp/Report.pdf',
+      url: 'https://Docs.Example/report.pdf?utm_source=mail#copy',
+      finalUrl: 'https://cdn.example/report.pdf',
+      startTime: '2026-08-14T12:00:00.000Z',
+    });
+    const unrelated = download({
+      id: 3,
+      basename: 'Budget',
+      filename: '/tmp/Budget.xlsx',
+      extension: 'xlsx',
+      category: 'document',
+      url: 'https://docs.example/budget.xlsx',
+      finalUrl: 'https://cdn.example/budget.xlsx',
+      startTime: '2026-08-14T11:00:00.000Z',
+    });
+    const { port } = createPort({ history: [recentMatch, unrelated, original] });
+
+    await renderManager({ downloadsPort: port });
+    fireEvent.click(screen.getByRole('button', { name: 'Possible duplicates' }));
+
+    const duplicateRegion = screen.getByRole('region', { name: 'Possible duplicate Report.pdf' });
+    expect(within(duplicateRegion).getByText('Possible duplicate')).toBeTruthy();
+    expect(within(duplicateRegion).getByText('strong confidence')).toBeTruthy();
+    expect(within(duplicateRegion).getByText('Same known size')).toBeTruthy();
+    expect(within(duplicateRegion).getByText('Same normalized source URL')).toBeTruthy();
+    expect(within(duplicateRegion).queryByText('Budget.xlsx')).toBeNull();
+
+    fireEvent.click(within(duplicateRegion).getByRole('button', { name: 'Show matching download Report.pdf' }));
+    expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-current')).toBe('page');
+    expect(visibleRows()).toEqual(['Report.pdf', 'Report.pdf']);
+  });
+
   it('loads active downloads plus the first 500 recent history items with active items deduped first', async () => {
     const active = download({ id: 10, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress', startTime: '2026-08-14T12:30:00.000Z' });
     const history = createDownloads(500);

@@ -22,6 +22,7 @@ import {
   type ManagerView,
 } from './components/manager-options';
 import { DownloadsView } from './views/DownloadsView';
+import { DuplicatesView } from './views/DuplicatesView';
 
 export interface RuntimeMessageSource {
   addListener(listener: (message: unknown) => void): void;
@@ -79,11 +80,19 @@ export function ManagerApp({
   }, [search]);
 
   const visibleDownloads = useMemo(() => {
-    const viewFiltered = filterDownloads(downloads, { predicate: view });
+    const viewFiltered = view === 'duplicates'
+      ? downloads
+      : filterDownloads(downloads, { predicate: view });
     const queryFiltered = filterDownloads(viewFiltered, toDownloadFilters(filters));
     const searched = searchDownloads(queryFiltered, debouncedSearch);
     return sortDownloads(searched, sortOptionFor(sortBy));
   }, [debouncedSearch, downloads, filters, sortBy, view]);
+
+  const showMatchingDownload = useCallback((download: DownloadRecord) => {
+    setView('all');
+    setSearch(download.basename);
+    setDebouncedSearch(download.basename);
+  }, []);
 
   return <main>
     <header>
@@ -128,15 +137,23 @@ export function ManagerApp({
       )}
     </section>
 
-    <DownloadsView
-      downloadActions={downloadActions}
-      downloads={visibleDownloads}
-      groupBy={groupBy}
-      loading={loading}
-      metrics={metrics}
-      now={now}
-      onAction={runAction}
-    />
+    {view === 'duplicates' ? (
+      <DuplicatesView
+        downloads={visibleDownloads}
+        loading={loading}
+        onShowMatchingDownload={showMatchingDownload}
+      />
+    ) : (
+      <DownloadsView
+        downloadActions={downloadActions}
+        downloads={visibleDownloads}
+        groupBy={groupBy}
+        loading={loading}
+        metrics={metrics}
+        now={now}
+        onAction={runAction}
+      />
+    )}
 
     <footer>
       <button disabled={!canLoadOlder || loading || loadingOlder} onClick={() => void loadOlder()} type="button">
