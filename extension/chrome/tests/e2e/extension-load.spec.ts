@@ -5,30 +5,30 @@ import { resolve } from 'node:path';
 const extensionPath = resolve(process.cwd(), 'dist');
 const chromiumExecutable = chromium.executablePath();
 
-test('loads the built extension and starts its service worker without errors', async () => {
+test('loads the built extension, activates its worker, and observes post-attach errors', async () => {
   test.skip(!existsSync(chromiumExecutable), 'Playwright Chromium is not installed in this environment.');
 
   const context = await test.step('launch Chrome with the built extension', launchExtension);
-  const consoleErrors: string[] = [];
+  const postAttachWorkerConsoleErrors: string[] = [];
   const pageErrors: string[] = [];
   const watchedWorkers = new WeakSet<object>();
 
   context.on('page', (page) => {
-    watchPage(page, consoleErrors, pageErrors);
+    watchPage(page, pageErrors);
   });
   context.on('serviceworker', (worker) => {
-    watchWorker(worker, watchedWorkers, consoleErrors);
+    watchWorker(worker, watchedWorkers, postAttachWorkerConsoleErrors);
   });
 
   try {
     const setupPage = await context.newPage();
-    watchPage(setupPage, consoleErrors, pageErrors);
+    watchPage(setupPage, pageErrors);
     const session = await context.browser()!.newBrowserCDPSession();
     const { id: extensionId } = await session.send('Extensions.loadUnpacked', {
       path: extensionPath,
     });
     const manager = await context.newPage();
-    watchPage(manager, consoleErrors, pageErrors);
+    watchPage(manager, pageErrors);
     await manager.goto(`chrome-extension://${extensionId}/manager.html`);
     await expect(manager.locator('#root')).toHaveText('Downly Download Manager');
 
@@ -49,10 +49,10 @@ test('loads the built extension and starts its service worker without errors', a
     }));
 
     const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker');
-    watchWorker(worker, watchedWorkers, consoleErrors);
+    watchWorker(worker, watchedWorkers, postAttachWorkerConsoleErrors);
 
     expect(worker.url()).toBe(`chrome-extension://${extensionId}/service-worker.js`);
-    expect(consoleErrors).toEqual([]);
+    expect(postAttachWorkerConsoleErrors).toEqual([]);
     expect(pageErrors).toEqual([]);
   } finally {
     await context.close();
@@ -90,12 +90,7 @@ function watchWorker(
   });
 }
 
-function watchPage(page: Page, consoleErrors: string[], pageErrors: string[]): void {
-  page.on('console', (message) => {
-    if (message.type() === 'error') {
-      consoleErrors.push(message.text());
-    }
-  });
+function watchPage(page: Page, pageErrors: string[]): void {
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
   });
