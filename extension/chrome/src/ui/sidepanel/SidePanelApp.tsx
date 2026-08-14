@@ -45,7 +45,7 @@ export function SidePanelApp({
     [downloads, search],
   );
 
-  return <main>
+  return <main className="downly-sidepanel-shell">
     <header>
       <h1>{t('sidePanel.title')}</h1>
       <p aria-label={t('sidePanel.activeDownloads')}>{t('sidePanel.activeDownloadsValue', { count: activeDownloads.length })}</p>

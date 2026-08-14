@@ -100,7 +100,7 @@ export function ManagerApp({
     setDebouncedSearch(download.basename);
   }, []);
 
-  return <main>
+  return <main className="downly-manager-shell">
     <header>
       <h1>{t('manager.title')}</h1>
       <p aria-label={t('manager.loadedDownloads')}>{t('manager.loadedDownloadsValue', { count: downloads.length })}</p>

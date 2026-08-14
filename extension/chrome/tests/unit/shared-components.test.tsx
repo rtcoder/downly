@@ -60,10 +60,13 @@ describe('shared download components', () => {
     render(<DownloadRow download={download()} metrics={activeMetrics} onCancel={onCancel} />);
 
     expect(screen.getByRole('article', { name: 'Report.pdf' })).toBeTruthy();
+    expect(screen.getByRole('toolbar', { name: 'Actions for Report.pdf' })).toBeTruthy();
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByText('512 B of 1.0 KB')).toBeTruthy();
     expect(screen.getByText('512 B/s')).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' }).getAttribute('aria-valuenow')).toBe('50');
+    const progress = screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' });
+    expect(progress.getAttribute('aria-valuenow')).toBe('50');
+    expect(progress.getAttribute('aria-valuetext')).toBe('512 B of 1.0 KB');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel Report.pdf' }));
 
@@ -161,10 +164,49 @@ describe('shared download components', () => {
     expect(onRemoveFile).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete file Report.pdf' }));
-    expect(screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' })).toBeTruthy();
+    const deleteDialog = screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' });
+    expect(deleteDialog).toBeTruthy();
+    expect(deleteDialog.textContent).toContain('This deletes the downloaded file from disk.');
     fireEvent.click(screen.getByRole('button', { name: 'Delete file' }));
     expect(onRemoveFile).toHaveBeenCalledWith(1);
     expect(onEraseHistory).toHaveBeenCalledOnce();
+  });
+
+  it('focuses the safe dialog action and closes confirmations with Escape', () => {
+    const onEraseHistory = vi.fn();
+
+    render(<DownloadActions
+      download={download({ state: 'complete' })}
+      onEraseHistory={onEraseHistory}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
+    const dialog = screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' });
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeNull();
+    expect(onEraseHistory).not.toHaveBeenCalled();
+  });
+
+  it('keeps keyboard focus inside destructive confirmation dialogs', () => {
+    render(<DownloadActions
+      download={download({ state: 'complete' })}
+      onEraseHistory={vi.fn()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
+    const dialog = screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' });
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    const confirm = screen.getByRole('button', { name: 'Remove from history' });
+
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(confirm);
+
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(cancel);
   });
 
   it('renders copy URL actions from visible controls', () => {

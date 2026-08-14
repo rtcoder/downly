@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 import { t } from '../i18n';
 
@@ -23,6 +23,13 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    cancelButtonRef.current?.focus();
+  }, [open]);
 
   if (!open) {
     return null;
@@ -32,11 +39,44 @@ export function ConfirmDialog({
     aria-describedby={description ? descriptionId : undefined}
     aria-labelledby={titleId}
     aria-modal="true"
+    onKeyDown={(event) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        onCancel();
+      }
+
+      if (event.key === 'Tab') {
+        keepFocusInDialog(event);
+      }
+    }}
     role="dialog"
   >
     <h2 id={titleId}>{title}</h2>
     {description ? <p id={descriptionId}>{description}</p> : null}
-    <button type="button" onClick={onCancel}>{cancelLabel}</button>
+    <button ref={cancelButtonRef} type="button" onClick={onCancel}>{cancelLabel}</button>
     <button type="button" onClick={onConfirm}>{confirmLabel}</button>
   </div>;
+}
+
+function keepFocusInDialog(event: React.KeyboardEvent<HTMLDivElement>): void {
+  const focusable = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    ),
+  );
+  const first = focusable[0];
+  const last = focusable.at(-1);
+
+  if (!first || !last) return;
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+
+  if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }

@@ -21,6 +21,7 @@ export function DownloadProgress({ download, metrics }: DownloadProgressProps) {
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={percent ?? undefined}
+      aria-valuetext={progressText}
       role="progressbar"
     />
     <span>{progressText}</span>

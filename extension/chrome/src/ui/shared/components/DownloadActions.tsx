@@ -54,7 +54,7 @@ export function DownloadActions({
   };
 
   return <>
-    <div aria-label={t('shared.downloadActions.actionsFor', { filename })}>
+    <div aria-label={t('shared.downloadActions.actionsFor', { filename })} role="toolbar">
     {availability.canPause && onPause ? (
       <button type="button" onClick={() => onPause(download.id)} aria-label={t('shared.downloadActions.pauseLabel', { filename })}>{t('shared.downloadActions.pause')}</button>
     ) : null}
