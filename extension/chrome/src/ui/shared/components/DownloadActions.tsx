@@ -5,6 +5,7 @@ export interface DownloadActionsProps {
   download: DownloadRecord;
   onCancel?: (downloadId: number) => void;
   onOpen?: (downloadId: number) => void;
+  onPause?: (downloadId: number) => void;
   onRemove?: (downloadId: number) => void;
   onResume?: (downloadId: number) => void;
   onRetry?: (downloadId: number) => void;
@@ -15,6 +16,7 @@ export function DownloadActions({
   download,
   onCancel,
   onOpen,
+  onPause,
   onRemove,
   onResume,
   onRetry,
@@ -23,6 +25,12 @@ export function DownloadActions({
   const filename = displayFilename(download);
 
   return <div aria-label={`Actions for ${filename}`}>
+    {download.state === 'in_progress' && !download.paused && onPause ? (
+      <button type="button" onClick={() => onPause(download.id)} aria-label={`Pause ${filename}`}>Pause</button>
+    ) : null}
+    {download.state === 'in_progress' && download.paused && onResume ? (
+      <button type="button" onClick={() => onResume(download.id)} aria-label={`Resume ${filename}`}>Resume</button>
+    ) : null}
     {download.state === 'in_progress' && onCancel ? (
       <button type="button" onClick={() => onCancel(download.id)} aria-label={`Cancel ${filename}`}>Cancel</button>
     ) : null}
