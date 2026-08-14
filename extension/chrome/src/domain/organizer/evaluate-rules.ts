@@ -37,9 +37,14 @@ function withFilename(path: string, record: DownloadRecord): string {
     return `${path}${normalizedPath.endsWith('/') || !path ? '' : '/'}${leafFilename}`;
   }
 
-  if (!templateHasFilename && sourceExtension && !lastSegment.endsWith(sourceExtension)) {
+  if (!templateHasFilename && sourceExtension && !hasExtension(lastSegment)) {
     return `${path}${sourceExtension}`;
   }
 
   return path;
+}
+
+function hasExtension(filename: string): boolean {
+  const extensionStart = filename.lastIndexOf('.');
+  return extensionStart > 0 && extensionStart < filename.length - 1;
 }

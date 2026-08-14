@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { evaluateRules } from '../../src/domain/organizer/evaluate-rules';
+import { validateRule } from '../../src/domain/organizer/evaluate-rule';
 import { BUILT_IN_ORGANIZER_PRESETS } from '../../src/domain/organizer/presets';
 import { renderPathTemplate } from '../../src/domain/organizer/render-path-template';
 import { sanitizeDownloadPath } from '../../src/domain/organizer/sanitize-download-path';
@@ -127,6 +128,41 @@ describe('evaluateRules', () => {
     expect(evaluateRules(record, [rule({ targetPathTemplate: 'Documents/' })], 'uniquify')).toMatchObject({
       filename: 'Documents/annual report.PDF',
     });
+  });
+
+  it('does not duplicate an explicit source extension with different casing', () => {
+    expect(evaluateRules(record, [rule({ targetPathTemplate: 'Documents/{basename}.pdf' })], 'uniquify')).toMatchObject({
+      filename: 'Documents/annual report.pdf',
+    });
+  });
+
+  it('keeps a deliberately different template extension without appending the source extension', () => {
+    expect(evaluateRules(record, [rule({ targetPathTemplate: 'Documents/{basename}.txt' })], 'uniquify')).toMatchObject({
+      filename: 'Documents/annual report.txt',
+    });
+  });
+
+  it('sanitizes problematic characters from the source filename after reconstruction', () => {
+    const unsafeFilenameRecord = {
+      ...record,
+      filename: 'annual:report?.PDF',
+      basename: 'annual:report?',
+    };
+
+    expect(evaluateRules(unsafeFilenameRecord, [rule({ targetPathTemplate: 'Documents/{filename}' })], 'uniquify')).toMatchObject({
+      filename: 'Documents/annual_report_.PDF',
+    });
+  });
+});
+
+describe('validateRule', () => {
+  it('returns an editor-facing error for the invalid regex condition', () => {
+    expect(validateRule(rule({
+      conditions: [
+        { field: 'category', operator: 'equals', value: 'document' },
+        { field: 'filename', operator: 'regex', value: '[' },
+      ],
+    }))).toEqual({ conditionIndex: 1, message: 'Invalid regular expression' });
   });
 });
 
