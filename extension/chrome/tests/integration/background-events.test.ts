@@ -7,15 +7,19 @@ import { ChromeActionApi } from '../../src/platform/chrome/action-api';
 
 type Listener<T> = (value: T) => void;
 
-function createEvent<T>(): { addListener: (listener: Listener<T>) => void; emit: (value: T) => void } {
-  let listener: Listener<T> | undefined;
+function createEvent<T>(): {
+  addListener: ReturnType<typeof vi.fn<(listener: Listener<T>) => void>>;
+  emit: (value: T) => void;
+} {
+  const listeners: Listener<T>[] = [];
+  const addListener = vi.fn((listener: Listener<T>) => {
+    listeners.push(listener);
+  });
 
   return {
-    addListener(nextListener) {
-      listener = nextListener;
-    },
+    addListener,
     emit(value) {
-      listener?.(value);
+      listeners.forEach((listener) => listener(value));
     },
   };
 }
@@ -36,6 +40,10 @@ describe('background download events', () => {
 
     registerDownloadEventListeners({ downloads: { onCreated, onChanged, onErased }, runtime: { sendMessage } }, refreshBadge);
 
+    expect(onCreated.addListener).toHaveBeenCalledTimes(1);
+    expect(onChanged.addListener).toHaveBeenCalledTimes(1);
+    expect(onErased.addListener).toHaveBeenCalledTimes(1);
+
     onCreated.emit({ id: 11 });
     onChanged.emit({ id: 12 });
     onErased.emit(13);
@@ -45,6 +53,31 @@ describe('background download events', () => {
     expect(sendMessage).toHaveBeenCalledWith({ type: 'downloads-invalidated', downloadId: 12 });
     expect(sendMessage).toHaveBeenCalledWith({ type: 'downloads-invalidated', downloadId: 13 });
     expect(refreshBadge).toHaveBeenCalledTimes(3);
+  });
+
+  it('refreshes the badge without an unhandled rejection when no message receiver exists', async () => {
+    const onCreated = createEvent<{ id: number }>();
+    const onChanged = createEvent<{ id: number }>();
+    const onErased = createEvent<number>();
+    const sendMessage = vi.fn().mockRejectedValue(new Error('Could not establish connection. Receiving end does not exist.'));
+    const refreshBadge = vi.fn().mockResolvedValue(undefined);
+    const unhandledRejections: PromiseRejectionEvent[] = [];
+    const captureUnhandledRejection = (event: PromiseRejectionEvent): void => {
+      unhandledRejections.push(event);
+    };
+
+    window.addEventListener('unhandledrejection', captureUnhandledRejection);
+    try {
+      registerDownloadEventListeners({ downloads: { onCreated, onChanged, onErased }, runtime: { sendMessage } }, refreshBadge);
+
+      onCreated.emit({ id: 11 });
+      await flushAsyncWork();
+    } finally {
+      window.removeEventListener('unhandledrejection', captureUnhandledRejection);
+    }
+
+    expect(refreshBadge).toHaveBeenCalledOnce();
+    expect(unhandledRejections).toEqual([]);
   });
 });
 
@@ -91,6 +124,9 @@ describe('native UI options controller', () => {
 
     registerUiOptionsListeners({ runtime: { onInstalled, onStartup } }, loadSettings, controller);
 
+    expect(onInstalled.addListener).toHaveBeenCalledTimes(1);
+    expect(onStartup.addListener).toHaveBeenCalledTimes(1);
+
     onInstalled.emit();
     await flushAsyncWork();
     onStartup.emit();
@@ -105,6 +141,9 @@ describe('native UI options controller', () => {
       return undefined;
     }],
     ['rejection', () => Promise.reject(new Error('Chrome rejected the UI option'))],
+    ['synchronous throw', () => {
+      throw new Error('Chrome synchronously rejected the UI option');
+    }],
   ] as const)('returns a warning when setUiOptions reports a %s', async (_kind, failure) => {
     const runtime: { lastError?: { message?: string } } = {};
     const controller = new UiOptionsController({
