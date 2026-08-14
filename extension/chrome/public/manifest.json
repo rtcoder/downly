@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
+  "version": "0.1.0",
+  "minimum_chrome_version": "123",
+  "default_locale": "en",
+  "permissions": [
+    "downloads",
+    "downloads.open",
+    "downloads.ui",
+    "storage",
+    "sidePanel"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Downly - Downloads"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_ui": {
+    "page": "manager.html?view=settings",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "commands": {
+    "open-downly-manager": {
+      "description": "Open Downly Download Manager"
+    }
+  }
+}
