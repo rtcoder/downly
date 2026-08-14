@@ -30,7 +30,7 @@ test('loads the built extension, activates its worker, and observes post-attach 
     const manager = await context.newPage();
     watchPage(manager, pageErrors);
     await manager.goto(`chrome-extension://${extensionId}/manager.html`);
-    await expect(manager.locator('#root')).toHaveText('Downly Download Manager');
+    await expect(manager.getByRole('heading', { name: 'Downly Download Manager' })).toBeVisible();
 
     await manager.evaluate(() => new Promise<void>((resolve) => {
       const chromeRuntime = (globalThis as typeof globalThis & {

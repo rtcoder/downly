@@ -1,0 +1,382 @@
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { DownloadSearchQuery, DownloadsPort } from '../../src/application/download-repository';
+import type { DownloadRecord, DownloadState, FileCategory } from '../../src/domain/downloads/types';
+import { ManagerApp, type RuntimeMessageSource } from '../../src/ui/manager/ManagerApp';
+
+function download(overrides: Partial<DownloadRecord> = {}): DownloadRecord {
+  return {
+    id: 1,
+    filename: '/Users/test/Report.pdf',
+    basename: 'Report',
+    extension: 'pdf',
+    mime: 'application/pdf',
+    category: 'document',
+    state: 'complete',
+    paused: false,
+    canResume: false,
+    exists: true,
+    danger: 'safe',
+    error: null,
+    url: 'https://example.com/report.pdf',
+    finalUrl: null,
+    referrer: null,
+    sourceDomain: 'example.com',
+    bytesReceived: 1_024,
+    totalBytes: 1_024,
+    fileSize: 1_024,
+    startTime: '2026-08-14T10:00:00.000Z',
+    endTime: '2026-08-14T10:01:00.000Z',
+    estimatedEndTime: null,
+    ...overrides,
+  };
+}
+
+function createDownloads(count: number, offset = 0): DownloadRecord[] {
+  return Array.from({ length: count }, (_, index) => {
+    const id = offset + index + 1;
+    return download({
+      id,
+      basename: `File ${id}`,
+      filename: `/tmp/File ${id}.pdf`,
+      startTime: new Date(Date.UTC(2026, 7, 14, 12, 0, 0) - id * 60_000).toISOString(),
+      url: `https://files.example/file-${id}.pdf`,
+    });
+  });
+}
+
+function createPort(fixtures: {
+  active?: DownloadRecord[];
+  history?: DownloadRecord[];
+  older?: DownloadRecord[];
+} = {}) {
+  const searches: DownloadSearchQuery[] = [];
+  const port: DownloadsPort = {
+    search: vi.fn(async (query: DownloadSearchQuery) => {
+      searches.push(query);
+      if (query.state === 'in_progress') {
+        return fixtures.active ?? [];
+      }
+      if (query.startedBefore) {
+        return fixtures.older ?? [];
+      }
+      return fixtures.history ?? [];
+    }),
+    getById: vi.fn(async () => null),
+    pause: vi.fn(async () => undefined),
+    resume: vi.fn(async () => undefined),
+    cancel: vi.fn(async () => undefined),
+    open: vi.fn(async () => undefined),
+    show: vi.fn(),
+    showDefaultFolder: vi.fn(),
+    removeFile: vi.fn(async () => undefined),
+    eraseById: vi.fn(async () => []),
+    downloadAgain: vi.fn(async () => 1),
+  };
+
+  return { port, searches };
+}
+
+function createRuntimeMessages(): RuntimeMessageSource & { send: (message: unknown) => void } {
+  const listeners = new Set<(message: unknown) => void>();
+
+  return {
+    addListener(listener) {
+      listeners.add(listener);
+    },
+    removeListener(listener) {
+      listeners.delete(listener);
+    },
+    send(message) {
+      for (const listener of listeners) {
+        listener(message);
+      }
+    },
+  };
+}
+
+function setVisibilityState(state: DocumentVisibilityState) {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    value: state,
+  });
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+}
+
+async function renderManager(props: Parameters<typeof ManagerApp>[0]) {
+  render(<ManagerApp {...props} />);
+  await act(async () => {
+    await Promise.resolve();
+  });
+  screen.getByRole('heading', { name: 'Downly Download Manager' });
+}
+
+function visibleRows() {
+  return screen.queryAllByRole('article').map((row) => row.getAttribute('aria-label'));
+}
+
+beforeEach(() => {
+  setVisibilityState('visible');
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe('download manager', () => {
+  it('navigates between all, active, completed, and failed views', async () => {
+    const active = download({ id: 1, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress' });
+    const completed = download({ id: 2, basename: 'Completed', filename: '/tmp/Completed.pdf', state: 'complete' });
+    const failed = download({ id: 3, basename: 'Failed', extension: 'dmg', filename: '/tmp/Failed.dmg', state: 'interrupted', error: 'NETWORK_FAILED' });
+    const { port } = createPort({ active: [active], history: [completed, failed] });
+
+    await renderManager({ downloadsPort: port });
+    expect(visibleRows()).toEqual(['Active.zip', 'Completed.pdf', 'Failed.dmg']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Active' }));
+    expect(visibleRows()).toEqual(['Active.zip']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
+    expect(visibleRows()).toEqual(['Completed.pdf']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Failed' }));
+    expect(visibleRows()).toEqual(['Failed.dmg']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(visibleRows()).toEqual(['Active.zip', 'Completed.pdf', 'Failed.dmg']);
+  });
+
+  it('loads active downloads plus the first 500 recent history items with active items deduped first', async () => {
+    const active = download({ id: 10, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress', startTime: '2026-08-14T12:30:00.000Z' });
+    const history = createDownloads(500);
+    const { port, searches } = createPort({ active: [active], history: [history[0], active, ...history.slice(1)] });
+
+    await renderManager({ downloadsPort: port });
+
+    expect(searches).toEqual([
+      { state: 'in_progress' },
+      { limit: 500, orderBy: ['-startTime'] },
+    ]);
+    expect(screen.getByLabelText('Loaded downloads').textContent).toBe('500 loaded');
+    expect(visibleRows()[0]).toBe('Active.zip');
+    expect(visibleRows()).toHaveLength(500);
+  });
+
+  it('loads older history using the oldest loaded startTime', async () => {
+    const newest = download({ id: 1, basename: 'Newest', filename: '/tmp/Newest.pdf', startTime: '2026-08-14T12:00:00.000Z' });
+    const oldest = download({ id: 2, basename: 'Oldest', filename: '/tmp/Oldest.pdf', startTime: '2026-08-13T12:00:00.000Z' });
+    const older = download({ id: 3, basename: 'Older', filename: '/tmp/Older.pdf', startTime: '2026-08-12T12:00:00.000Z' });
+    const { port, searches } = createPort({ history: [newest, oldest], older: [older] });
+
+    await renderManager({ downloadsPort: port });
+    fireEvent.click(screen.getByRole('button', { name: 'Load older downloads' }));
+
+    await waitFor(() => expect(visibleRows()).toEqual(['Newest.pdf', 'Oldest.pdf', 'Older.pdf']));
+    expect(searches.at(-1)).toEqual({
+      limit: 500,
+      orderBy: ['-startTime'],
+      startedBefore: '2026-08-13T12:00:00.000Z',
+    });
+  });
+
+  it('stops offering older loading when Chrome returns only duplicate rows', async () => {
+    const newest = download({ id: 1, basename: 'Newest', filename: '/tmp/Newest.pdf', startTime: '2026-08-14T12:00:00.000Z' });
+    const oldest = download({ id: 2, basename: 'Oldest', filename: '/tmp/Oldest.pdf', startTime: '2026-08-13T12:00:00.000Z' });
+    const { port } = createPort({ history: [newest, oldest], older: [oldest] });
+
+    await renderManager({ downloadsPort: port });
+    fireEvent.click(screen.getByRole('button', { name: 'Load older downloads' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Load older downloads' }).hasAttribute('disabled')).toBe(true));
+
+    expect(visibleRows()).toEqual(['Newest.pdf', 'Oldest.pdf']);
+    expect(port.search).toHaveBeenCalledTimes(3);
+  });
+
+  it('debounces search input before applying query results', async () => {
+    vi.useFakeTimers();
+    const report = download({ id: 1, basename: 'Résumé Report', filename: '/tmp/Résumé Report.pdf' });
+    const archive = download({ id: 2, basename: 'Archive', extension: 'zip', filename: '/tmp/Archive.zip', sourceDomain: 'cdn.example' });
+    const { port } = createPort({ history: [report, archive] });
+
+    await renderManager({ downloadsPort: port });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search downloads' }), { target: { value: 'resume' } });
+    expect(visibleRows()).toEqual(['Résumé Report.pdf', 'Archive.zip']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(299);
+    });
+    expect(visibleRows()).toEqual(['Résumé Report.pdf', 'Archive.zip']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(visibleRows()).toEqual(['Résumé Report.pdf']);
+  });
+
+  it('filters by state, category, extension, domain, date, size, and file existence', async () => {
+    const wanted = download({
+      id: 1,
+      basename: 'Wanted',
+      filename: '/tmp/Wanted.pdf',
+      category: 'document',
+      extension: 'pdf',
+      sourceDomain: 'docs.example',
+      fileSize: 4_096,
+      startTime: '2026-08-14T09:00:00.000Z',
+      exists: true,
+    });
+    const wrongCategory = download({ id: 2, basename: 'Video', extension: 'mp4', filename: '/tmp/Video.mp4', category: 'video', sourceDomain: 'docs.example', fileSize: 4_096, startTime: '2026-08-14T09:00:00.000Z' });
+    const wrongDomain = download({ id: 3, basename: 'Other', filename: '/tmp/Other.pdf', sourceDomain: 'other.example', fileSize: 4_096, startTime: '2026-08-14T09:00:00.000Z' });
+    const tooSmall = download({ id: 4, basename: 'Small', filename: '/tmp/Small.pdf', sourceDomain: 'docs.example', fileSize: 128, startTime: '2026-08-14T09:00:00.000Z' });
+    const missing = download({ id: 5, basename: 'Missing', filename: '/tmp/Missing.pdf', sourceDomain: 'docs.example', fileSize: 4_096, startTime: '2026-08-14T09:00:00.000Z', exists: false });
+    const { port } = createPort({ history: [wanted, wrongCategory, wrongDomain, tooSmall, missing] });
+
+    await renderManager({ downloadsPort: port });
+
+    fireEvent.change(screen.getByLabelText('State filter'), { target: { value: 'complete' satisfies DownloadState } });
+    fireEvent.change(screen.getByLabelText('Category filter'), { target: { value: 'document' satisfies FileCategory } });
+    fireEvent.change(screen.getByLabelText('Extension filter'), { target: { value: 'pdf' } });
+    fireEvent.change(screen.getByLabelText('Source domain filter'), { target: { value: 'docs.example' } });
+    fireEvent.change(screen.getByLabelText('Started after filter'), { target: { value: '2026-08-14' } });
+    fireEvent.change(screen.getByLabelText('Minimum size filter'), { target: { value: '1024' } });
+    fireEvent.change(screen.getByLabelText('File availability filter'), { target: { value: 'exists' } });
+
+    expect(visibleRows()).toEqual(['Wanted.pdf']);
+  });
+
+  it('sorts by selected option and groups visible downloads by time', async () => {
+    const todaySmall = download({ id: 1, basename: 'Today small', filename: '/tmp/Today small.pdf', fileSize: 100, startTime: '2026-08-14T10:00:00.000Z' });
+    const yesterdayLarge = download({ id: 2, basename: 'Yesterday large', filename: '/tmp/Yesterday large.zip', extension: 'zip', category: 'archive', fileSize: 9_000, startTime: '2026-08-13T10:00:00.000Z' });
+    const olderMedium = download({ id: 3, basename: 'Older medium', filename: '/tmp/Older medium.pdf', fileSize: 500, startTime: '2026-07-20T10:00:00.000Z' });
+    const { port } = createPort({ history: [todaySmall, yesterdayLarge, olderMedium] });
+
+    await renderManager({ downloadsPort: port, now: new Date('2026-08-14T12:00:00.000Z') });
+
+    fireEvent.change(screen.getByLabelText('Sort downloads'), { target: { value: 'sizeDesc' } });
+    expect(visibleRows()).toEqual(['Yesterday large.zip', 'Older medium.pdf', 'Today small.pdf']);
+
+    fireEvent.change(screen.getByLabelText('Group downloads'), { target: { value: 'time' } });
+
+    const today = screen.getByRole('region', { name: 'Today' });
+    const yesterday = screen.getByRole('region', { name: 'Yesterday' });
+    const older = screen.getByRole('region', { name: 'Older' });
+    expect(within(today).getByRole('article', { name: 'Today small.pdf' })).toBeTruthy();
+    expect(within(yesterday).getByRole('article', { name: 'Yesterday large.zip' })).toBeTruthy();
+    expect(within(older).getByRole('article', { name: 'Older medium.pdf' })).toBeTruthy();
+  });
+
+  it('toggles responsive filter drawer state', async () => {
+    const { port } = createPort();
+
+    await renderManager({ downloadsPort: port });
+
+    const toggle = screen.getByRole('button', { name: 'Filters' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('complementary', { name: 'Download filters' })).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('complementary', { name: 'Download filters' })).toBeTruthy();
+  });
+
+  it('refreshes active and the first 500 history items on runtime invalidation without stale overwrites', async () => {
+    const runtimeMessages = createRuntimeMessages();
+    const firstActive = deferred<DownloadRecord[]>();
+    const firstHistory = deferred<DownloadRecord[]>();
+    const secondActive = deferred<DownloadRecord[]>();
+    const secondHistory = deferred<DownloadRecord[]>();
+    const stale = download({ id: 1, basename: 'Stale', filename: '/tmp/Stale.pdf' });
+    const fresh = download({ id: 2, basename: 'Fresh', filename: '/tmp/Fresh.pdf' });
+    const activeResponses = [firstActive, secondActive];
+    const historyResponses = [firstHistory, secondHistory];
+    const { port } = createPort();
+    vi.mocked(port.search).mockImplementation((query: DownloadSearchQuery) => {
+      if (query.state === 'in_progress') {
+        return (activeResponses.shift() ?? deferred<DownloadRecord[]>()).promise;
+      }
+      return (historyResponses.shift() ?? deferred<DownloadRecord[]>()).promise;
+    });
+
+    render(<ManagerApp downloadsPort={port} runtimeMessages={runtimeMessages} />);
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(2));
+
+    act(() => runtimeMessages.send({ type: 'downloads-invalidated' }));
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(4));
+
+    await act(async () => {
+      secondActive.resolve([]);
+      secondHistory.resolve([fresh]);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(visibleRows()).toEqual(['Fresh.pdf']));
+
+    await act(async () => {
+      firstActive.resolve([]);
+      firstHistory.resolve([stale]);
+      await Promise.resolve();
+    });
+
+    expect(visibleRows()).toEqual(['Fresh.pdf']);
+    expect(vi.mocked(port.search).mock.calls[2][0]).toEqual({ state: 'in_progress' });
+    expect(vi.mocked(port.search).mock.calls[3][0]).toEqual({ limit: 500, orderBy: ['-startTime'] });
+  });
+
+  it('polls active downloads only while the manager is visible and active downloads exist', async () => {
+    vi.useFakeTimers();
+    const active = download({ id: 5, basename: 'Movie', extension: 'mp4', filename: '/tmp/Movie.mp4', state: 'in_progress', bytesReceived: 100, totalBytes: 1_000 });
+    const nextActive = download({ ...active, bytesReceived: 300 });
+    const completed = download({ ...active, state: 'complete', bytesReceived: 1_000, endTime: '2026-08-14T10:02:00.000Z' });
+    let activeResponses = [[active], [nextActive], [], [completed]];
+    const { port } = createPort({ history: [] });
+    vi.mocked(port.search).mockImplementation(async (query: DownloadSearchQuery) => {
+      if (query.state === 'in_progress') {
+        return activeResponses.shift() ?? [];
+      }
+      return [];
+    });
+
+    await renderManager({ downloadsPort: port });
+    expect(port.search).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(port.search).toHaveBeenCalledTimes(3);
+    expect(screen.getByText('200 B/s')).toBeTruthy();
+
+    setVisibilityState('hidden');
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+    activeResponses = [[completed]];
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(port.search).toHaveBeenCalledTimes(3);
+
+    setVisibilityState('visible');
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(port.search).toHaveBeenCalledTimes(4);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(port.search).toHaveBeenCalledTimes(4);
+  });
+});

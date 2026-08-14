@@ -1,7 +1,5 @@
 import { createRoot } from 'react-dom/client';
 
-function ManagerApp() {
-  return <main>Downly Download Manager</main>;
-}
+import { ManagerApp } from './ManagerApp';
 
 createRoot(document.getElementById('root')!).render(<ManagerApp />);
