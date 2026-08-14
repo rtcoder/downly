@@ -67,6 +67,8 @@ async function launchExtension(): Promise<BrowserContext> {
     ignoreDefaultArgs: ['--disable-extensions'],
     args: [
       `--disable-extensions-except=${extensionPath}`,
+      `--load-extension=${extensionPath}`,
+      '--disable-crash-reporter',
       '--no-first-run',
       '--no-default-browser-check',
     ],
