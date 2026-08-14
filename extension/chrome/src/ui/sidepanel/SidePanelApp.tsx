@@ -4,6 +4,7 @@ import { createDownloadActionService } from '../../application/download-actions'
 import type { DownloadsPort } from '../../application/download-repository';
 import type { DownloadRecord } from '../../domain/downloads/types';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
+import { ChromeRuntimeApi } from '../../platform/chrome/runtime-api';
 import { DownloadRow, EmptyState, SearchInput, ToastRegion } from '../shared';
 import { useActiveDownloadPolling, useDownloads, type RuntimeMessageSource } from '../shared/hooks';
 
@@ -130,22 +131,20 @@ export function openFullManager() {
     chrome?: {
       runtime?: {
         getURL(path: string): string;
+        getManifest?: () => { version?: string };
       };
       tabs?: {
         create(options: { url: string }): void;
       };
     };
   }).chrome;
-  const managerUrl = chromeApi?.runtime?.getURL
-    ? chromeApi.runtime.getURL('manager.html')
-    : 'manager.html';
 
-  if (chromeApi?.tabs?.create) {
-    chromeApi.tabs.create({ url: managerUrl });
+  if (chromeApi?.runtime?.getURL) {
+    void new ChromeRuntimeApi(chromeApi as ConstructorParameters<typeof ChromeRuntimeApi>[0]).openManager();
     return;
   }
 
-  window.open(managerUrl);
+  window.open('manager.html');
 }
 
 function messageFromError(error: unknown): string {

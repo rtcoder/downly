@@ -24,6 +24,7 @@ import {
 import { DownloadsView } from './views/DownloadsView';
 import { DuplicatesView } from './views/DuplicatesView';
 import { OrganizerView } from './views/OrganizerView';
+import { SettingsView } from './views/SettingsView';
 import { StatisticsView } from './views/StatisticsView';
 
 export interface RuntimeMessageSource {
@@ -47,7 +48,7 @@ export function ManagerApp({
   runtimeMessages = defaultRuntimeMessages(),
   now = new Date(),
 }: ManagerAppProps) {
-  const [view, setView] = useState<ManagerView>('all');
+  const [view, setView] = useState<ManagerView>(() => initialManagerView());
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState<ManagerSortKey>('startTimeDesc');
@@ -84,7 +85,7 @@ export function ManagerApp({
   }, [search]);
 
   const visibleDownloads = useMemo(() => {
-    const viewFiltered = view === 'duplicates' || view === 'statistics' || view === 'organizer'
+    const viewFiltered = view === 'duplicates' || view === 'statistics' || view === 'organizer' || view === 'settings'
       ? downloads
       : filterDownloads(downloads, { predicate: view });
     const queryFiltered = filterDownloads(viewFiltered, toDownloadFilters(filters));
@@ -141,7 +142,9 @@ export function ManagerApp({
       )}
     </section>
 
-    {view === 'statistics' ? (
+    {view === 'settings' ? (
+      <SettingsView />
+    ) : view === 'statistics' ? (
       <StatisticsView downloads={statisticsDownloads} now={now} />
     ) : view === 'organizer' ? (
       <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null} />
@@ -173,6 +176,22 @@ export function ManagerApp({
       onDismiss={() => setActionError(null)}
     />
   </main>;
+}
+
+function initialManagerView(): ManagerView {
+  const view = new URLSearchParams(window.location.search).get('view');
+  return isManagerView(view) ? view : 'all';
+}
+
+function isManagerView(value: string | null): value is ManagerView {
+  return value === 'all'
+    || value === 'active'
+    || value === 'completed'
+    || value === 'failed'
+    || value === 'duplicates'
+    || value === 'statistics'
+    || value === 'organizer'
+    || value === 'settings';
 }
 
 function useManagerDownloads(

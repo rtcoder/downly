@@ -1,7 +1,7 @@
 import { DOWNLOAD_SORTS, type DownloadSortOption } from '../../../domain/downloads/sort-downloads';
 import type { DownloadPredicate } from '../../../domain/downloads/filter-downloads';
 
-export type ManagerView = DownloadPredicate | 'duplicates' | 'statistics' | 'organizer';
+export type ManagerView = DownloadPredicate | 'duplicates' | 'statistics' | 'organizer' | 'settings';
 export type ManagerSortKey =
   | 'startTimeDesc'
   | 'startTimeAsc'
@@ -20,6 +20,7 @@ export const MANAGER_VIEWS: Array<{ id: ManagerView; label: string }> = [
   { id: 'duplicates', label: 'Possible duplicates' },
   { id: 'statistics', label: 'Statistics' },
   { id: 'organizer', label: 'Smart Organizer' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export const MANAGER_SORTS: Array<{ id: ManagerSortKey; label: string; option: DownloadSortOption }> = [

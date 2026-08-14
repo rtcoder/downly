@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { BadgeController } from '../../src/background/badge-controller';
 import { registerDownloadEventListeners } from '../../src/background/download-events';
+import { registerChromeIntegrationControls, registerSettingsUpdateListener } from '../../src/background/service-worker';
 import { registerUiOptionsListeners, UiOptionsController } from '../../src/background/ui-options-controller';
 import { ChromeActionApi } from '../../src/platform/chrome/action-api';
+import { ChromeRuntimeApi } from '../../src/platform/chrome/runtime-api';
+import { ChromeSidePanelApi } from '../../src/platform/chrome/side-panel-api';
 
 type Listener<T> = (value: T) => void;
 
@@ -106,6 +109,18 @@ describe('BadgeController', () => {
 
     expect(setBadgeText).toHaveBeenCalledWith({ text: '9+' });
   });
+
+  it('clears the badge when the active count badge setting is disabled', async () => {
+    const search = vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    const setBadgeText = vi.fn().mockResolvedValue(undefined);
+    const loadSettings = vi.fn().mockResolvedValue({ showActiveCountBadge: false });
+    const badge = new BadgeController({ setBadgeText }, search, loadSettings);
+
+    await badge.refresh();
+
+    expect(search).not.toHaveBeenCalled();
+    expect(setBadgeText).toHaveBeenCalledWith('');
+  });
 });
 
 describe('native UI options controller', () => {
@@ -165,5 +180,72 @@ describe('native UI options controller', () => {
         code: 'native-ui-conflict',
       },
     });
+  });
+});
+
+describe('Chrome integration controls', () => {
+  it('configures toolbar action clicks to open the Downly side panel', () => {
+    const setPanelBehavior = vi.fn();
+    const sidePanel = new ChromeSidePanelApi({ sidePanel: { setPanelBehavior } });
+
+    void sidePanel.configureActionClickOpening();
+
+    expect(setPanelBehavior).toHaveBeenCalledWith({ openPanelOnActionClick: true });
+  });
+
+  it('opens manager pages through runtime URLs', async () => {
+    const getURL = vi.fn((path: string) => `chrome-extension://downly/${path}`);
+    const create = vi.fn();
+    const runtime = new ChromeRuntimeApi({ runtime: { getURL, getManifest: () => ({ version: '0.1.0' }) }, tabs: { create } });
+
+    await runtime.openManager('settings');
+
+    expect(getURL).toHaveBeenCalledWith('manager.html?view=settings');
+    expect(create).toHaveBeenCalledWith({ url: 'chrome-extension://downly/manager.html?view=settings' });
+  });
+
+  it('registers service worker action setup and command handler for the full manager', async () => {
+    const onCommand = createEvent<string>();
+    const setPanelBehavior = vi.fn();
+    const getURL = vi.fn((path: string) => `chrome-extension://downly/${path}`);
+    const create = vi.fn();
+
+    registerChromeIntegrationControls({
+      commands: { onCommand },
+      runtime: { getURL, getManifest: () => ({ version: '0.1.0' }) },
+      sidePanel: { setPanelBehavior },
+      tabs: { create },
+    });
+
+    expect(setPanelBehavior).toHaveBeenCalledWith({ openPanelOnActionClick: true });
+
+    onCommand.emit('open-downly-manager');
+    await flushAsyncWork();
+
+    expect(create).toHaveBeenCalledWith({ url: 'chrome-extension://downly/manager.html' });
+  });
+});
+
+describe('settings update runtime messages', () => {
+  it('refreshes Chrome UI options and the active count badge after settings change', async () => {
+    const onMessage = createEvent<unknown>();
+    const applyNativeUiOptions = vi.fn().mockResolvedValue(undefined);
+    const refreshBadge = vi.fn().mockResolvedValue(undefined);
+
+    registerSettingsUpdateListener(
+      {
+        runtime: {
+          getURL: (path: string) => path,
+          onMessage,
+        },
+      },
+      { applyNativeUiOptions, refreshBadge },
+    );
+
+    onMessage.emit({ type: 'settings-updated' });
+    await flushAsyncWork();
+
+    expect(applyNativeUiOptions).toHaveBeenCalledOnce();
+    expect(refreshBadge).toHaveBeenCalledOnce();
   });
 });
