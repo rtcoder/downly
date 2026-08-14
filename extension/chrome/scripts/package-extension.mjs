@@ -17,3 +17,15 @@ const archivePath = resolve(outputDirectory, `downly-chrome-${version}.zip`);
 mkdirSync(outputDirectory, { recursive: true });
 rmSync(archivePath, { force: true });
 execFileSync('zip', ['-q', '-r', archivePath, '.'], { cwd: distDirectory });
+
+const zipEntries = execFileSync('unzip', ['-Z1', archivePath], { encoding: 'utf8' })
+  .split('\n')
+  .filter(Boolean);
+
+if (!zipEntries.includes('manifest.json')) {
+  throw new Error('Packaged extension zip must contain manifest.json at the archive root.');
+}
+
+if (zipEntries.some((entry) => entry.startsWith('dist/'))) {
+  throw new Error('Packaged extension zip must not include an extra dist/ directory level.');
+}
