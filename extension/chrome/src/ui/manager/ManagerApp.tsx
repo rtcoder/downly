@@ -23,6 +23,7 @@ import {
 } from './components/manager-options';
 import { DownloadsView } from './views/DownloadsView';
 import { DuplicatesView } from './views/DuplicatesView';
+import { OrganizerView } from './views/OrganizerView';
 import { StatisticsView } from './views/StatisticsView';
 
 export interface RuntimeMessageSource {
@@ -83,7 +84,7 @@ export function ManagerApp({
   }, [search]);
 
   const visibleDownloads = useMemo(() => {
-    const viewFiltered = view === 'duplicates' || view === 'statistics'
+    const viewFiltered = view === 'duplicates' || view === 'statistics' || view === 'organizer'
       ? downloads
       : filterDownloads(downloads, { predicate: view });
     const queryFiltered = filterDownloads(viewFiltered, toDownloadFilters(filters));
@@ -142,6 +143,8 @@ export function ManagerApp({
 
     {view === 'statistics' ? (
       <StatisticsView downloads={statisticsDownloads} now={now} />
+    ) : view === 'organizer' ? (
+      <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null} />
     ) : view === 'duplicates' ? (
       <DuplicatesView
         downloads={visibleDownloads}
