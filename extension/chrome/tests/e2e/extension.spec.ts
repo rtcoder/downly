@@ -45,7 +45,7 @@ test.describe('Downly extension', () => {
 
       const sidePanel = await harness.newExtensionPage('sidepanel.html');
       await expect(sidePanel).toHaveTitle('Downloads');
-      await expect(sidePanel.getByRole('heading', { name: 'Downloads' })).toBeVisible();
+      await expect(sidePanel.getByRole('heading', { name: 'Downloads', exact: true })).toBeVisible();
       await expect(sidePanel.getByRole('button', { name: 'Open full manager' })).toBeVisible();
       expect(harness.pageErrors).toEqual([]);
       expect(harness.workerErrors).toEqual([]);
