@@ -362,6 +362,7 @@ describe('download manager', () => {
 
     await renderManager({ downloadsPort: port });
 
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     fireEvent.change(screen.getByLabelText('State filter'), { target: { value: 'complete' satisfies DownloadState } });
     fireEvent.change(screen.getByLabelText('Category filter'), { target: { value: 'document' satisfies FileCategory } });
     fireEvent.change(screen.getByLabelText('Extension filter'), { target: { value: 'pdf' } });
@@ -381,6 +382,7 @@ describe('download manager', () => {
 
     await renderManager({ downloadsPort: port, now: new Date('2026-08-14T12:00:00.000Z') });
 
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
     fireEvent.change(screen.getByLabelText('Sort downloads'), { target: { value: 'sizeDesc' } });
     expect(visibleRows()).toEqual(['Yesterday large.zip', 'Older medium.pdf', 'Today small.pdf']);
 
@@ -402,10 +404,17 @@ describe('download manager', () => {
     const toggle = screen.getByRole('button', { name: 'Filters' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByRole('complementary', { name: 'Download filters' })).toBeNull();
+    expect(screen.queryByRole('form', { name: 'Manager query controls' })).toBeNull();
 
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('complementary', { name: 'Download filters' })).toBeTruthy();
+    expect(screen.getByRole('form', { name: 'Manager query controls' })).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('complementary', { name: 'Download filters' })).toBeNull();
+    expect(screen.queryByRole('form', { name: 'Manager query controls' })).toBeNull();
   });
 
   it('refreshes active and the first 500 history items on runtime invalidation without stale overwrites', async () => {

@@ -201,16 +201,7 @@ export function ManagerApp({
             sortBy={sortBy}
           />
         </aside>
-      ) : (
-        <ManagerFilters
-          filters={filters}
-          groupBy={groupBy}
-          onFiltersChange={setFilters}
-          onGroupByChange={setGroupBy}
-          onSortByChange={setSortBy}
-          sortBy={sortBy}
-        />
-      )}
+      ) : null}
     </section>
 
     {view === 'settings' ? (
