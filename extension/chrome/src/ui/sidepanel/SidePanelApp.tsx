@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createDownloadActionService } from '../../application/download-actions';
 import type { DownloadsPort } from '../../application/download-repository';
 import type { DownloadRecord } from '../../domain/downloads/types';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
 import { ChromeRuntimeApi } from '../../platform/chrome/runtime-api';
-import { DownloadRow, EmptyState, SearchInput, ToastRegion } from '../shared';
+import { DownloadRow, EmptyState, SearchInput, ToastRegion, type ToastMessage } from '../shared';
 import { useActiveDownloadPolling, useDownloads, type RuntimeMessageSource } from '../shared/hooks';
 import { t } from '../shared/i18n';
 
@@ -17,6 +17,13 @@ export interface SidePanelAppProps {
   openManager?: () => void;
 }
 
+const HISTORY_REMOVAL_UNDO_MS = 5_000;
+
+interface PendingHistoryRemoval {
+  download: DownloadRecord;
+  timeoutId: number;
+}
+
 export function SidePanelApp({
   downloadsPort,
   runtimeMessages = defaultRuntimeMessages(),
@@ -26,7 +33,15 @@ export function SidePanelApp({
   const resolvedDownloadsPort = downloadsPort ?? defaultDownloadsPort;
   const [search, setSearch] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
-  const { downloads, loading, replaceActiveDownloads } = useDownloads(resolvedDownloadsPort, runtimeMessages);
+  const [historyRemovalToasts, setHistoryRemovalToasts] = useState<ToastMessage[]>([]);
+  const pendingHistoryRemovalTimers = useRef(new Map<number, PendingHistoryRemoval>());
+  const {
+    downloads,
+    loading,
+    removeDownload,
+    replaceActiveDownloads,
+    restoreDownload,
+  } = useDownloads(resolvedDownloadsPort, runtimeMessages);
   const downloadActions = useMemo(
     () => createDownloadActionService({ downloadsPort: resolvedDownloadsPort }),
     [resolvedDownloadsPort],
@@ -37,6 +52,65 @@ export function SidePanelApp({
       setActionError(messageFromError(error));
     });
   }, []);
+  const dismissHistoryRemovalToast = useCallback((toastId: string) => {
+    setHistoryRemovalToasts((current) => current.filter((toast) => toast.id !== toastId));
+  }, []);
+  const undoHistoryRemoval = useCallback((download: DownloadRecord, toastId: string) => {
+    const pendingRemoval = pendingHistoryRemovalTimers.current.get(download.id);
+    if (pendingRemoval) {
+      window.clearTimeout(pendingRemoval.timeoutId);
+      pendingHistoryRemovalTimers.current.delete(download.id);
+    }
+
+    restoreDownload(download);
+    dismissHistoryRemovalToast(toastId);
+  }, [dismissHistoryRemovalToast, restoreDownload]);
+  const scheduleHistoryRemoval = useCallback((download: DownloadRecord) => {
+    const existingRemoval = pendingHistoryRemovalTimers.current.get(download.id);
+    if (existingRemoval) {
+      window.clearTimeout(existingRemoval.timeoutId);
+    }
+
+    const toastId = `history-removal-${download.id}`;
+    removeDownload(download.id);
+    setActionError(null);
+
+    const timeoutId = window.setTimeout(() => {
+      pendingHistoryRemovalTimers.current.delete(download.id);
+      dismissHistoryRemovalToast(toastId);
+      void downloadActions.eraseHistory(download).catch((error: unknown) => {
+        restoreDownload(download);
+        setActionError(messageFromError(error));
+      });
+    }, HISTORY_REMOVAL_UNDO_MS);
+
+    pendingHistoryRemovalTimers.current.set(download.id, { download, timeoutId });
+    setHistoryRemovalToasts((current) => [
+      ...current.filter((toast) => toast.id !== toastId),
+      {
+        actionLabel: t('shared.undo'),
+        id: toastId,
+        message: t('shared.downloadActions.removedFromHistory'),
+        onAction: () => undoHistoryRemoval(download, toastId),
+        tone: 'success',
+      },
+    ]);
+  }, [dismissHistoryRemovalToast, downloadActions, removeDownload, restoreDownload, undoHistoryRemoval]);
+  const dismissToast = useCallback((messageId: string) => {
+    if (messageId === 'download-action-error') {
+      setActionError(null);
+      return;
+    }
+
+    dismissHistoryRemovalToast(messageId);
+  }, [dismissHistoryRemovalToast]);
+  useEffect(() => () => {
+    for (const pendingRemoval of pendingHistoryRemovalTimers.current.values()) {
+      window.clearTimeout(pendingRemoval.timeoutId);
+      void downloadActions.eraseHistory(pendingRemoval.download);
+    }
+    pendingHistoryRemovalTimers.current.clear();
+  }, [downloadActions]);
   const activeDownloads = useMemo(
     () => downloads.filter((download) => download.state === 'in_progress'),
     [downloads],
@@ -71,7 +145,7 @@ export function SidePanelApp({
           onCopyFinalUrl={() => runAction(() => downloadActions.copyFinalUrl(download))}
           onCopySourceUrl={() => runAction(() => downloadActions.copySourceUrl(download))}
           onDownloadAgain={() => runAction(() => downloadActions.downloadAgain(download))}
-          onEraseHistory={() => runAction(() => downloadActions.eraseHistory(download))}
+          onEraseHistory={() => scheduleHistoryRemoval(download)}
           onOpen={() => runAction(() => downloadActions.open(download))}
           onPause={() => runAction(() => downloadActions.pause(download))}
           onRemoveFile={() => runAction(() => downloadActions.removeFile(download))}
@@ -82,8 +156,11 @@ export function SidePanelApp({
       ))}
     </section>
     <ToastRegion
-      messages={actionError ? [{ id: 'download-action-error', tone: 'error', message: actionError }] : []}
-      onDismiss={() => setActionError(null)}
+      messages={[
+        ...historyRemovalToasts,
+        ...(actionError ? [{ id: 'download-action-error', tone: 'error' as const, message: actionError }] : []),
+      ]}
+      onDismiss={dismissToast}
     />
   </main>;
 }

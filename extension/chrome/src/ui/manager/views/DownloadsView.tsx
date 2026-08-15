@@ -15,6 +15,7 @@ export interface DownloadsViewProps {
   now: Date;
   downloadActions: DownloadActionService;
   onAction: (action: () => Promise<unknown> | void) => void;
+  onEraseHistory: (download: DownloadRecord) => void;
 }
 
 export function DownloadsView({
@@ -25,6 +26,7 @@ export function DownloadsView({
   now,
   downloadActions,
   onAction,
+  onEraseHistory,
 }: DownloadsViewProps) {
   if (loading) {
     return <p>{t('manager.downloads.loading')}</p>;
@@ -36,7 +38,7 @@ export function DownloadsView({
 
   if (groupBy === 'none') {
     return <section aria-label={t('manager.downloads.list')}>
-      {downloads.map((download) => renderRow(download, metrics, downloadActions, onAction))}
+      {downloads.map((download) => renderRow(download, metrics, downloadActions, onAction, onEraseHistory))}
     </section>;
   }
 
@@ -44,7 +46,7 @@ export function DownloadsView({
     {groupsFor(downloads, groupBy, now).map((group) => (
       <section aria-label={group.label} key={group.label}>
         <h2>{group.label}</h2>
-        {group.downloads.map((download) => renderRow(download, metrics, downloadActions, onAction))}
+        {group.downloads.map((download) => renderRow(download, metrics, downloadActions, onAction, onEraseHistory))}
       </section>
     ))}
   </section>;
@@ -55,6 +57,7 @@ function renderRow(
   metrics: ActiveDownloadMetrics[],
   downloadActions: DownloadActionService,
   onAction: (action: () => Promise<unknown> | void) => void,
+  onEraseHistory: (download: DownloadRecord) => void,
 ) {
   return <DownloadRow
     download={download}
@@ -64,7 +67,7 @@ function renderRow(
     onCopyFinalUrl={() => onAction(() => downloadActions.copyFinalUrl(download))}
     onCopySourceUrl={() => onAction(() => downloadActions.copySourceUrl(download))}
     onDownloadAgain={() => onAction(() => downloadActions.downloadAgain(download))}
-    onEraseHistory={() => onAction(() => downloadActions.eraseHistory(download))}
+    onEraseHistory={() => onEraseHistory(download)}
     onOpen={() => onAction(() => downloadActions.open(download))}
     onPause={() => onAction(() => downloadActions.pause(download))}
     onRemoveFile={() => onAction(() => downloadActions.removeFile(download))}

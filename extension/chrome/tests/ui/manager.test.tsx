@@ -118,15 +118,22 @@ function deferred<T>() {
 }
 
 async function renderManager(props: Parameters<typeof ManagerApp>[0]) {
-  render(<ManagerApp {...props} />);
+  const rendered = render(<ManagerApp {...props} />);
   await act(async () => {
     await Promise.resolve();
   });
   screen.getByRole('heading', { name: 'Downly Download Manager' });
+  return rendered;
 }
 
 function visibleRows() {
   return screen.queryAllByRole('article').map((row) => row.getAttribute('aria-label'));
+}
+
+function clickOverflowAction(rowName: string, actionName: string) {
+  const row = screen.getByRole('article', { name: rowName });
+  fireEvent.click(within(row).getByRole('button', { name: `More actions for ${rowName}` }));
+  fireEvent.click(screen.getByRole('menuitem', { name: actionName }));
 }
 
 beforeEach(() => {
@@ -521,6 +528,7 @@ describe('download manager', () => {
   });
 
   it('wires manager row actions through the application action service', async () => {
+    vi.useFakeTimers();
     const active = download({ id: 1, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress', paused: false });
     const paused = download({ id: 2, basename: 'Paused', extension: 'zip', filename: '/tmp/Paused.zip', state: 'in_progress', paused: true });
     const failed = download({ id: 3, basename: 'Failed', extension: 'dmg', filename: '/tmp/Failed.dmg', state: 'interrupted', canResume: false, finalUrl: 'https://cdn.example/failed.dmg' });
@@ -531,19 +539,21 @@ describe('download manager', () => {
 
     await renderManager({ downloadsPort: port });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pause Active.zip' }));
+    clickOverflowAction('Active.zip', 'Pause Active.zip');
     fireEvent.click(screen.getByRole('button', { name: 'Resume Paused.zip' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel Active.zip' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Retry Failed.dmg' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Download Complete.pdf again' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Complete.pdf' }));
+    clickOverflowAction('Active.zip', 'Cancel Active.zip');
+    clickOverflowAction('Failed.dmg', 'Retry Failed.dmg');
+    clickOverflowAction('Complete.pdf', 'Download Complete.pdf again');
+    clickOverflowAction('Complete.pdf', 'Open Complete.pdf');
     fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Show Complete.pdf in folder' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Copy source URL for Complete.pdf' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Copy final URL for Complete.pdf' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Delete file Complete.pdf' }));
+    clickOverflowAction('Complete.pdf', 'Copy source URL for Complete.pdf');
+    clickOverflowAction('Complete.pdf', 'Copy final URL for Complete.pdf');
+    clickOverflowAction('Complete.pdf', 'Delete file Complete.pdf');
     fireEvent.click(screen.getByRole('button', { name: 'Delete file' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
 
     expect(port.pause).toHaveBeenCalledWith(1);
     expect(port.resume).toHaveBeenCalledWith(2);
@@ -558,13 +568,51 @@ describe('download manager', () => {
     expect(port.removeFile).toHaveBeenCalledWith(4);
   });
 
+  it('removes a manager history row optimistically and restores it from the undo toast', async () => {
+    vi.useFakeTimers();
+    const completed = download({ id: 4, basename: 'Complete', filename: '/tmp/Complete.pdf', state: 'complete' });
+    const { port } = createPort({ history: [completed] });
+
+    await renderManager({ downloadsPort: port });
+
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+
+    expect(visibleRows()).toEqual([]);
+    expect(screen.getByText('Removed from history.')).toBeTruthy();
+    expect(port.eraseById).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(visibleRows()).toEqual(['Complete.pdf']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(port.eraseById).not.toHaveBeenCalled();
+    expect(screen.queryByText('Removed from history.')).toBeNull();
+  });
+
+  it('commits a pending manager history removal when the manager unmounts', async () => {
+    vi.useFakeTimers();
+    const completed = download({ id: 4, basename: 'Complete', filename: '/tmp/Complete.pdf', state: 'complete' });
+    const { port } = createPort({ history: [completed] });
+
+    const { unmount } = await renderManager({ downloadsPort: port });
+
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    unmount();
+
+    expect(port.eraseById).toHaveBeenCalledWith(4);
+  });
+
   it('shows a controlled manager error when an action fails', async () => {
     const completed = download({ id: 4, basename: 'Complete', filename: '/tmp/Complete.pdf', state: 'complete' });
     const { port } = createPort({ history: [completed] });
     vi.mocked(port.open).mockRejectedValue(new Error('Chrome denied open.'));
 
     await renderManager({ downloadsPort: port });
-    fireEvent.click(screen.getByRole('button', { name: 'Open Complete.pdf' }));
+    clickOverflowAction('Complete.pdf', 'Open Complete.pdf');
 
     expect(await screen.findByText('Chrome denied open.')).toBeTruthy();
   });

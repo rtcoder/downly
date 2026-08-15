@@ -7,7 +7,7 @@ import { filterDownloads, type DownloadFilters } from '../../domain/downloads/fi
 import { searchDownloads } from '../../domain/downloads/search-downloads';
 import { sortDownloads } from '../../domain/downloads/sort-downloads';
 import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
-import { SearchInput, ToastRegion } from '../shared';
+import { SearchInput, ToastRegion, type ToastMessage } from '../shared';
 import { useActiveDownloadPolling } from '../shared/hooks';
 import { t } from '../shared/i18n';
 import {
@@ -43,6 +43,12 @@ const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = { state: 'in_progress' };
 const HISTORY_QUERY: DownloadSearchQuery = { limit: 500, orderBy: ['-startTime'] };
 const STATISTICS_HISTORY_QUERY: DownloadSearchQuery = { orderBy: ['-startTime'] };
 const SEARCH_DEBOUNCE_MS = 300;
+const HISTORY_REMOVAL_UNDO_MS = 5_000;
+
+interface PendingHistoryRemoval {
+  download: DownloadRecord;
+  timeoutId: number;
+}
 
 export function ManagerApp({
   downloadsPort,
@@ -59,6 +65,8 @@ export function ManagerApp({
   const [filters, setFilters] = useState<ManagerFilterState>(EMPTY_MANAGER_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [historyRemovalToasts, setHistoryRemovalToasts] = useState<ToastMessage[]>([]);
+  const pendingHistoryRemovalTimers = useRef(new Map<number, PendingHistoryRemoval>());
   const {
     activeDownloads,
     downloads,
@@ -66,8 +74,10 @@ export function ManagerApp({
     loading,
     loadingOlder,
     loadOlder,
+    removeDownload,
     refresh,
     replaceActiveDownloads,
+    restoreDownload,
     statisticsDownloads,
   } = useManagerDownloads(resolvedDownloadsPort, runtimeMessages);
   const { metrics } = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
@@ -81,6 +91,66 @@ export function ManagerApp({
       setActionError(messageFromError(error));
     });
   }, []);
+  const dismissHistoryRemovalToast = useCallback((toastId: string) => {
+    setHistoryRemovalToasts((current) => current.filter((toast) => toast.id !== toastId));
+  }, []);
+  const undoHistoryRemoval = useCallback((download: DownloadRecord, toastId: string) => {
+    const pendingRemoval = pendingHistoryRemovalTimers.current.get(download.id);
+    if (pendingRemoval) {
+      window.clearTimeout(pendingRemoval.timeoutId);
+      pendingHistoryRemovalTimers.current.delete(download.id);
+    }
+
+    restoreDownload(download);
+    dismissHistoryRemovalToast(toastId);
+  }, [dismissHistoryRemovalToast, restoreDownload]);
+  const scheduleHistoryRemoval = useCallback((download: DownloadRecord) => {
+    const existingRemoval = pendingHistoryRemovalTimers.current.get(download.id);
+    if (existingRemoval) {
+      window.clearTimeout(existingRemoval.timeoutId);
+    }
+
+    const toastId = `history-removal-${download.id}`;
+    removeDownload(download.id);
+    setActionError(null);
+
+    const timeoutId = window.setTimeout(() => {
+      pendingHistoryRemovalTimers.current.delete(download.id);
+      dismissHistoryRemovalToast(toastId);
+      void downloadActions.eraseHistory(download).catch((error: unknown) => {
+        restoreDownload(download);
+        setActionError(messageFromError(error));
+      });
+    }, HISTORY_REMOVAL_UNDO_MS);
+
+    pendingHistoryRemovalTimers.current.set(download.id, { download, timeoutId });
+    setHistoryRemovalToasts((current) => [
+      ...current.filter((toast) => toast.id !== toastId),
+      {
+        actionLabel: t('shared.undo'),
+        id: toastId,
+        message: t('shared.downloadActions.removedFromHistory'),
+        onAction: () => undoHistoryRemoval(download, toastId),
+        tone: 'success',
+      },
+    ]);
+  }, [dismissHistoryRemovalToast, downloadActions, removeDownload, restoreDownload, undoHistoryRemoval]);
+  const dismissToast = useCallback((messageId: string) => {
+    if (messageId === 'download-action-error') {
+      setActionError(null);
+      return;
+    }
+
+    dismissHistoryRemovalToast(messageId);
+  }, [dismissHistoryRemovalToast]);
+
+  useEffect(() => () => {
+    for (const pendingRemoval of pendingHistoryRemovalTimers.current.values()) {
+      window.clearTimeout(pendingRemoval.timeoutId);
+      void downloadActions.eraseHistory(pendingRemoval.download);
+    }
+    pendingHistoryRemovalTimers.current.clear();
+  }, [downloadActions]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
@@ -166,6 +236,7 @@ export function ManagerApp({
         metrics={metrics}
         now={now}
         onAction={runAction}
+        onEraseHistory={scheduleHistoryRemoval}
       />
     )}
 
@@ -175,8 +246,11 @@ export function ManagerApp({
       </button>
     </footer>
     <ToastRegion
-      messages={actionError ? [{ id: 'download-action-error', tone: 'error', message: actionError }] : []}
-      onDismiss={() => setActionError(null)}
+      messages={[
+        ...historyRemovalToasts,
+        ...(actionError ? [{ id: 'download-action-error', tone: 'error' as const, message: actionError }] : []),
+      ]}
+      onDismiss={dismissToast}
     />
   </main>;
 }
@@ -211,6 +285,19 @@ function useManagerDownloads(
   const replaceActiveDownloads = useCallback((downloads: DownloadRecord[]) => {
     setActiveDownloads(downloads);
     setStatisticsDownloads((current) => mergeActiveFirst(downloads, current));
+  }, []);
+  const removeDownload = useCallback((downloadId: number) => {
+    setActiveDownloads((current) => current.filter((download) => download.id !== downloadId));
+    setHistoryDownloads((current) => current.filter((download) => download.id !== downloadId));
+    setStatisticsDownloads((current) => current.filter((download) => download.id !== downloadId));
+  }, []);
+  const restoreDownload = useCallback((download: DownloadRecord) => {
+    if (download.state === 'in_progress') {
+      setActiveDownloads((current) => dedupeById([download, ...current]));
+    } else {
+      setHistoryDownloads((current) => dedupeById([download, ...current]));
+    }
+    setStatisticsDownloads((current) => dedupeById([download, ...current]));
   }, []);
 
   const refresh = useCallback(async (options: { showLoading?: boolean } = {}) => {
@@ -297,8 +384,10 @@ function useManagerDownloads(
     loading,
     loadingOlder,
     loadOlder,
+    removeDownload,
     refresh,
     replaceActiveDownloads,
+    restoreDownload,
     statisticsDownloads,
   };
 }

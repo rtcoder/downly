@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 
 import { getDownloadActionAvailability } from '../../../application/download-actions';
 import type { DownloadRecord } from '../../../domain/downloads/types';
@@ -21,7 +21,7 @@ export interface DownloadActionsProps {
   onShowInFolder?: (downloadId: number) => void;
 }
 
-type PendingConfirmation = 'erase-history' | 'remove-file' | null;
+type PendingConfirmation = 'remove-file' | null;
 type DownloadActionIconName =
   | 'cancel'
   | 'copy'
@@ -29,10 +29,17 @@ type DownloadActionIconName =
   | 'download'
   | 'folder'
   | 'history'
+  | 'more'
   | 'open'
   | 'pause'
   | 'resume'
   | 'retry';
+
+interface DownloadActionDefinition {
+  icon: DownloadActionIconName;
+  label: string;
+  onSelect: () => void;
+}
 
 export function DownloadActions({
   download,
@@ -51,63 +58,97 @@ export function DownloadActions({
   const filename = displayFilename(download);
   const availability = getDownloadActionAvailability(download);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = useId();
 
   const confirm = (): void => {
-    if (pendingConfirmation === 'erase-history') {
-      onEraseHistory?.(download.id);
-    }
-
     if (pendingConfirmation === 'remove-file') {
       onRemoveFile?.(download.id);
     }
 
     setPendingConfirmation(null);
   };
+  const overflowActions: DownloadActionDefinition[] = [
+    availability.canPause && onPause ? {
+      icon: 'pause',
+      label: t('shared.downloadActions.pauseLabel', { filename }),
+      onSelect: () => onPause(download.id),
+    } : null,
+    availability.canCancel && onCancel ? {
+      icon: 'cancel',
+      label: t('shared.downloadActions.cancelLabel', { filename }),
+      onSelect: () => onCancel(download.id),
+    } : null,
+    availability.canRetry && !download.canResume && onRetry ? {
+      icon: 'retry',
+      label: t('shared.downloadActions.retryLabel', { filename }),
+      onSelect: () => onRetry(download.id),
+    } : null,
+    availability.canDownloadAgain && onDownloadAgain ? {
+      icon: 'download',
+      label: t('shared.downloadActions.downloadAgainLabel', { filename }),
+      onSelect: () => onDownloadAgain(download.id),
+    } : null,
+    availability.canOpen && onOpen ? {
+      icon: 'open',
+      label: t('shared.downloadActions.openLabel', { filename }),
+      onSelect: () => onOpen(download.id),
+    } : null,
+    availability.canCopySourceUrl && onCopySourceUrl ? {
+      icon: 'copy',
+      label: t('shared.downloadActions.copySourceUrlLabel', { filename }),
+      onSelect: () => onCopySourceUrl(download.id),
+    } : null,
+    availability.canCopyFinalUrl && onCopyFinalUrl ? {
+      icon: 'copy',
+      label: t('shared.downloadActions.copyFinalUrlLabel', { filename }),
+      onSelect: () => onCopyFinalUrl(download.id),
+    } : null,
+    availability.canRemoveFile && onRemoveFile ? {
+      icon: 'delete',
+      label: t('shared.downloadActions.deleteFileLabel', { filename }),
+      onSelect: () => setPendingConfirmation('remove-file'),
+    } : null,
+  ].filter((action): action is DownloadActionDefinition => Boolean(action));
+
+  const selectOverflowAction = (action: DownloadActionDefinition): void => {
+    setMenuOpen(false);
+    action.onSelect();
+  };
 
   return <>
     <div aria-label={t('shared.downloadActions.actionsFor', { filename })} className="download-actions" role="toolbar">
-    {availability.canPause && onPause ? (
-      <DownloadActionButton icon="pause" label={t('shared.downloadActions.pauseLabel', { filename })} onClick={() => onPause(download.id)} />
-    ) : null}
     {availability.canResume && onResume ? (
       <DownloadActionButton icon="resume" label={t('shared.downloadActions.resumeLabel', { filename })} onClick={() => onResume(download.id)} />
-    ) : null}
-    {availability.canCancel && onCancel ? (
-      <DownloadActionButton icon="cancel" label={t('shared.downloadActions.cancelLabel', { filename })} onClick={() => onCancel(download.id)} />
-    ) : null}
-    {availability.canRetry && !download.canResume && onRetry ? (
-      <DownloadActionButton icon="retry" label={t('shared.downloadActions.retryLabel', { filename })} onClick={() => onRetry(download.id)} />
-    ) : null}
-    {availability.canDownloadAgain && onDownloadAgain ? (
-      <DownloadActionButton icon="download" label={t('shared.downloadActions.downloadAgainLabel', { filename })} onClick={() => onDownloadAgain(download.id)} />
-    ) : null}
-    {availability.canOpen && onOpen ? (
-      <DownloadActionButton icon="open" label={t('shared.downloadActions.openLabel', { filename })} onClick={() => onOpen(download.id)} />
     ) : null}
     {availability.canShowInFolder && onShowInFolder ? (
       <DownloadActionButton icon="folder" label={t('shared.downloadActions.showInFolderLabel', { filename })} onClick={() => onShowInFolder(download.id)} />
     ) : null}
-    {availability.canCopySourceUrl && onCopySourceUrl ? (
-      <DownloadActionButton icon="copy" label={t('shared.downloadActions.copySourceUrlLabel', { filename })} onClick={() => onCopySourceUrl(download.id)} />
-    ) : null}
-    {availability.canCopyFinalUrl && onCopyFinalUrl ? (
-      <DownloadActionButton icon="copy" label={t('shared.downloadActions.copyFinalUrlLabel', { filename })} onClick={() => onCopyFinalUrl(download.id)} />
-    ) : null}
     {availability.canEraseHistory && onEraseHistory ? (
-      <DownloadActionButton icon="history" label={t('shared.downloadActions.removeFromHistoryLabel', { filename })} onClick={() => setPendingConfirmation('erase-history')} />
+      <DownloadActionButton icon="history" label={t('shared.downloadActions.removeFromHistoryLabel', { filename })} onClick={() => onEraseHistory(download.id)} />
     ) : null}
-    {availability.canRemoveFile && onRemoveFile ? (
-      <DownloadActionButton icon="delete" label={t('shared.downloadActions.deleteFileLabel', { filename })} onClick={() => setPendingConfirmation('remove-file')} />
+    {overflowActions.length > 0 ? (
+      <div className="download-actions-menu">
+        <DownloadActionButton
+          ariaControls={menuId}
+          ariaExpanded={menuOpen}
+          icon="more"
+          label={t('shared.downloadActions.moreActionsLabel', { filename })}
+          onClick={() => setMenuOpen((open) => !open)}
+        />
+        {menuOpen ? (
+          <div id={menuId} role="menu">
+            {overflowActions.map((action) => (
+              <button key={action.label} onClick={() => selectOverflowAction(action)} role="menuitem" type="button">
+                <DownloadActionIcon name={action.icon} />
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
     ) : null}
     </div>
-    <ConfirmDialog
-      open={pendingConfirmation === 'erase-history'}
-      title={t('shared.downloadActions.removeHistoryTitle', { filename })}
-      description={t('shared.downloadActions.removeHistoryDescription')}
-      confirmLabel={t('shared.downloadActions.removeFromHistory')}
-      onConfirm={confirm}
-      onCancel={() => setPendingConfirmation(null)}
-    />
     <ConfirmDialog
       open={pendingConfirmation === 'remove-file'}
       title={t('shared.downloadActions.deleteFileTitle', { filename })}
@@ -120,15 +161,27 @@ export function DownloadActions({
 }
 
 function DownloadActionButton({
+  ariaControls,
+  ariaExpanded,
   icon,
   label,
   onClick,
 }: {
+  ariaControls?: string;
+  ariaExpanded?: boolean;
   icon: DownloadActionIconName;
   label: string;
   onClick: () => void;
 }) {
-  return <button aria-label={label} className="download-action-button" onClick={onClick} title={label} type="button">
+  return <button
+    aria-controls={ariaControls}
+    aria-expanded={ariaExpanded}
+    aria-label={label}
+    className="download-action-button"
+    onClick={onClick}
+    title={label}
+    type="button"
+  >
     <DownloadActionIcon name={icon} />
   </button>;
 }
@@ -164,6 +217,11 @@ const iconPaths: Record<DownloadActionIconName, ReactNode> = {
     <path d="M4 5h12a3 3 0 0 1 0 6H8" />
     <path d="M8 8l-4 3 4 3" />
     <path d="M15 15l5 5M20 15l-5 5" />
+  </>,
+  more: <>
+    <circle cx="5" cy="12" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="19" cy="12" r="1" />
   </>,
   open: <>
     <path d="M14 4h6v6" />

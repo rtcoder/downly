@@ -60,6 +60,14 @@ describe('accessibility and responsive UX hardening', () => {
     expect(css).toContain('.download-row-details h3');
     expect(css).toContain('text-overflow: ellipsis');
     expect(css).toContain('white-space: nowrap');
+    expect(css).toContain('.dialog-overlay');
+    expect(css).toContain('block-size: max-content');
+    expect(css).toContain('.toast-region');
+    expect(css).toContain('inset-block-end');
+    expect(css).toContain('.download-actions-menu');
+    expect(css).toContain('.downly-manager-shell article .download-actions');
+    expect(css).toContain('justify-content: flex-end');
+    expect(css).toContain('.download-row-progress');
   });
 
   it.each([320, 400, 600])('renders the side panel landmarks at %i px width', async (width) => {

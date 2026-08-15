@@ -63,7 +63,7 @@ describe('shared download components', () => {
     expect(heading.getAttribute('title')).toBe(filename);
   });
 
-  it('renders an active download row with progress, status, and cancel action', () => {
+  it('renders an active download row with progress, status, and overflow cancel action', () => {
     const onCancel = vi.fn();
 
     render(<DownloadRow download={download()} metrics={activeMetrics} onCancel={onCancel} />);
@@ -77,12 +77,13 @@ describe('shared download components', () => {
     expect(progress.getAttribute('aria-valuenow')).toBe('50');
     expect(progress.getAttribute('aria-valuetext')).toBe('512 B of 1.0 KB');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Cancel Report.pdf' }));
 
     expect(onCancel).toHaveBeenCalledWith(1);
   });
 
-  it('renders a completed download with open and remove-from-history actions', () => {
+  it('renders a completed download with visible history removal and overflow open action', () => {
     const onOpen = vi.fn();
     const onEraseHistory = vi.fn();
 
@@ -95,12 +96,13 @@ describe('shared download components', () => {
     expect(screen.getByText('Complete')).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' }).getAttribute('aria-valuenow')).toBe('100');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Open Report.pdf' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
 
     expect(onOpen).toHaveBeenCalledWith(1);
     expect(onEraseHistory).toHaveBeenCalledWith(1);
+    expect(screen.queryByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeNull();
   });
 
   it('renders an interrupted resumable download with error context', () => {
@@ -136,7 +138,8 @@ describe('shared download components', () => {
       onRetry={onRetry}
     />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Retry Report.pdf' }));
 
     expect(screen.queryByRole('button', { name: 'Resume Report.pdf' })).toBeNull();
     expect(onRetry).toHaveBeenCalledWith(1);
@@ -156,7 +159,7 @@ describe('shared download components', () => {
     expect(screen.queryByRole('button', { name: 'Delete file Report.pdf' })).toBeNull();
   });
 
-  it('confirms history removal separately from file deletion', () => {
+  it('removes history immediately while confirming file deletion', () => {
     const onEraseHistory = vi.fn();
     const onRemoveFile = vi.fn();
 
@@ -167,12 +170,12 @@ describe('shared download components', () => {
     />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
-    expect(screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove from history' }));
     expect(onEraseHistory).toHaveBeenCalledWith(1);
     expect(onRemoveFile).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Delete file Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete file Report.pdf' }));
     const deleteDialog = screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' });
     expect(deleteDialog).toBeTruthy();
     expect(deleteDialog.textContent).toContain('This deletes the downloaded file from disk.');
@@ -181,35 +184,37 @@ describe('shared download components', () => {
     expect(onEraseHistory).toHaveBeenCalledOnce();
   });
 
-  it('focuses the safe dialog action and closes confirmations with Escape', () => {
-    const onEraseHistory = vi.fn();
+  it('focuses the safe dialog action and closes file deletion confirmations with Escape', () => {
+    const onRemoveFile = vi.fn();
 
     render(<DownloadActions
       download={download({ state: 'complete' })}
-      onEraseHistory={onEraseHistory}
+      onRemoveFile={onRemoveFile}
     />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
-    const dialog = screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' });
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete file Report.pdf' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' });
 
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
 
-    expect(screen.queryByRole('dialog', { name: 'Remove Report.pdf from history?' })).toBeNull();
-    expect(onEraseHistory).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Delete Report.pdf from disk?' })).toBeNull();
+    expect(onRemoveFile).not.toHaveBeenCalled();
   });
 
   it('keeps keyboard focus inside destructive confirmation dialogs', () => {
     render(<DownloadActions
       download={download({ state: 'complete' })}
-      onEraseHistory={vi.fn()}
+      onRemoveFile={vi.fn()}
     />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Report.pdf from history' }));
-    const dialog = screen.getByRole('dialog', { name: 'Remove Report.pdf from history?' });
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete file Report.pdf' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete Report.pdf from disk?' });
     const cancel = screen.getByRole('button', { name: 'Cancel' });
-    const confirm = screen.getByRole('button', { name: 'Remove from history' });
+    const confirm = screen.getByRole('button', { name: 'Delete file' });
 
     fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
     expect(document.activeElement).toBe(confirm);
@@ -218,7 +223,7 @@ describe('shared download components', () => {
     expect(document.activeElement).toBe(cancel);
   });
 
-  it('renders copy URL actions from visible controls', () => {
+  it('renders copy URL actions from the overflow menu', () => {
     const onCopySourceUrl = vi.fn();
     const onCopyFinalUrl = vi.fn();
 
@@ -231,14 +236,16 @@ describe('shared download components', () => {
       onCopyFinalUrl={onCopyFinalUrl}
     />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy source URL for Report.pdf' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Copy final URL for Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Copy source URL for Report.pdf' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Copy final URL for Report.pdf' }));
 
     expect(onCopySourceUrl).toHaveBeenCalledWith(1);
     expect(onCopyFinalUrl).toHaveBeenCalledWith(1);
   });
 
-  it('renders download action controls as icon-only buttons with accessible names', () => {
+  it('keeps primary download actions as icon buttons and puts secondary actions in a menu', () => {
     render(<DownloadActions
       download={download({
         state: 'complete',
@@ -255,13 +262,29 @@ describe('shared download components', () => {
     />);
 
     const toolbar = screen.getByRole('toolbar', { name: 'Actions for Report.pdf' });
-    expect(screen.getByRole('button', { name: 'Download Report.pdf again' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Copy source URL for Report.pdf' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Copy final URL for Report.pdf' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show Report.pdf in folder' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove Report.pdf from history' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Download Report.pdf again' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copy source URL for Report.pdf' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copy final URL for Report.pdf' })).toBeNull();
     expect(within(toolbar).queryByText('Download again')).toBeNull();
     expect(within(toolbar).queryByText('Copy source URL')).toBeNull();
     expect(within(toolbar).queryByText('Copy final URL')).toBeNull();
-    expect(within(toolbar).getAllByRole('img', { hidden: true }).length).toBeGreaterThanOrEqual(6);
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    expect(screen.getByRole('menuitem', { name: 'Download Report.pdf again' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Copy source URL for Report.pdf' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Copy final URL for Report.pdf' })).toBeTruthy();
+    expect(within(toolbar).getAllByRole('img', { hidden: true }).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('renders status above progress inside the row progress section', () => {
+    render(<DownloadRow download={download()} metrics={activeMetrics} />);
+
+    const progressSection = document.querySelector('.download-row-progress');
+
+    expect(progressSection).toBeTruthy();
+    expect(progressSection?.firstElementChild?.textContent).toContain('In progress');
+    expect(progressSection?.querySelector('[role="progressbar"]')).toBeTruthy();
   });
 
   it('ignores stale metrics from a different download row', () => {
@@ -295,18 +318,22 @@ describe('shared download components', () => {
         onConfirm={onConfirm}
         onCancel={onDismiss}
       />
-      <ToastRegion messages={[{ id: 'saved', tone: 'success', message: 'Saved' }]} onDismiss={onDismiss} />
+      <ToastRegion
+        messages={[{ id: 'saved', tone: 'success', message: 'Saved', actionLabel: 'Undo', onAction: onConfirm }]}
+        onDismiss={onDismiss}
+      />
     </>);
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search downloads' }), { target: { value: 'invoice' } });
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss Saved' }));
 
     expect(screen.getByText('Paused')).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Archive file' })).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Remove download?' })).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('invoice');
-    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledTimes(2);
     expect(onDismiss).toHaveBeenCalledWith('saved');
   });
 });

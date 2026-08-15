@@ -35,26 +35,28 @@ export function ConfirmDialog({
     return null;
   }
 
-  return <div
-    aria-describedby={description ? descriptionId : undefined}
-    aria-labelledby={titleId}
-    aria-modal="true"
-    onKeyDown={(event) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        onCancel();
-      }
+  return <div className="dialog-overlay">
+    <div
+      aria-describedby={description ? descriptionId : undefined}
+      aria-labelledby={titleId}
+      aria-modal="true"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          onCancel();
+        }
 
-      if (event.key === 'Tab') {
-        keepFocusInDialog(event);
-      }
-    }}
-    role="dialog"
-  >
-    <h2 id={titleId}>{title}</h2>
-    {description ? <p id={descriptionId}>{description}</p> : null}
-    <button ref={cancelButtonRef} type="button" onClick={onCancel}>{cancelLabel}</button>
-    <button type="button" onClick={onConfirm}>{confirmLabel}</button>
+        if (event.key === 'Tab') {
+          keepFocusInDialog(event);
+        }
+      }}
+      role="dialog"
+    >
+      <h2 id={titleId}>{title}</h2>
+      {description ? <p id={descriptionId}>{description}</p> : null}
+      <button ref={cancelButtonRef} type="button" onClick={onCancel}>{cancelLabel}</button>
+      <button type="button" onClick={onConfirm}>{confirmLabel}</button>
+    </div>
   </div>;
 }
 

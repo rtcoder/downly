@@ -12,7 +12,9 @@ export interface UseDownloadsResult {
   downloads: DownloadRecord[];
   loading: boolean;
   refresh: () => Promise<void>;
+  removeDownload: (downloadId: number) => void;
   replaceActiveDownloads: (activeDownloads: DownloadRecord[]) => void;
+  restoreDownload: (download: DownloadRecord) => void;
 }
 
 const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = { state: 'in_progress' };
@@ -26,6 +28,18 @@ export function useDownloads(
   const [recentDownloads, setRecentDownloads] = useState<DownloadRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const refreshSequence = useRef(0);
+  const removeDownload = useCallback((downloadId: number) => {
+    setActiveDownloads((current) => current.filter((download) => download.id !== downloadId));
+    setRecentDownloads((current) => current.filter((download) => download.id !== downloadId));
+  }, []);
+  const restoreDownload = useCallback((download: DownloadRecord) => {
+    if (download.state === 'in_progress') {
+      setActiveDownloads((current) => dedupeById([download, ...current]));
+      return;
+    }
+
+    setRecentDownloads((current) => dedupeById([download, ...current]));
+  }, []);
 
   const refresh = useCallback(async (options: { showLoading?: boolean } = {}) => {
     const showLoading = options.showLoading ?? true;
@@ -77,7 +91,9 @@ export function useDownloads(
     downloads,
     loading,
     refresh,
+    removeDownload,
     replaceActiveDownloads: setActiveDownloads,
+    restoreDownload,
   };
 }
 
@@ -87,6 +103,18 @@ function mergeActiveFirst(activeDownloads: DownloadRecord[], recentDownloads: Do
     ...activeDownloads,
     ...recentDownloads.filter((download) => !activeIds.has(download.id)),
   ];
+}
+
+function dedupeById(downloads: DownloadRecord[]): DownloadRecord[] {
+  const seen = new Set<number>();
+  return downloads.filter((download) => {
+    if (seen.has(download.id)) {
+      return false;
+    }
+
+    seen.add(download.id);
+    return true;
+  });
 }
 
 function isDownloadsInvalidatedMessage(message: unknown): message is { type: 'downloads-invalidated' } {

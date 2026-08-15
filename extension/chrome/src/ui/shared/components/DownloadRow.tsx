@@ -22,8 +22,10 @@ export function DownloadRow({ download, metrics, ...actions }: DownloadRowProps)
       <span>{formatSourceDomain(download)}</span>
       <time dateTime={download.startTime}>{formatDateTime(download.startTime)}</time>
     </div>
-    <DownloadStatus download={download} />
-    <DownloadProgress download={download} metrics={metrics} />
+    <div className="download-row-progress">
+      <DownloadStatus download={download} />
+      <DownloadProgress download={download} metrics={metrics} />
+    </div>
     <DownloadActions download={download} {...actions} />
   </article>;
 }
