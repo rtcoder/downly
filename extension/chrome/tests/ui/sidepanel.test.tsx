@@ -112,7 +112,7 @@ function visibleRows() {
 
 function clickOverflowAction(rowName: string, actionName: string) {
   const row = screen.getByRole('article', { name: rowName });
-  fireEvent.click(within(row).getByRole('button', { name: `More actions for ${rowName}` }));
+  fireEvent.click(within(row).getByRole('button', { name: 'More actions' }));
   fireEvent.click(screen.getByRole('menuitem', { name: actionName }));
 }
 
@@ -393,18 +393,18 @@ describe('side panel', () => {
 
     await renderPanel({ downloadsPort: port });
 
-    clickOverflowAction('Active.zip', 'Pause Active.zip');
-    fireEvent.click(screen.getByRole('button', { name: 'Resume Paused.zip' }));
-    clickOverflowAction('Active.zip', 'Cancel Active.zip');
-    clickOverflowAction('Failed.dmg', 'Retry Failed.dmg');
-    clickOverflowAction('Complete.pdf', 'Download Complete.pdf again');
-    clickOverflowAction('Complete.pdf', 'Open Complete.pdf');
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Show Complete.pdf in folder' }));
-    clickOverflowAction('Complete.pdf', 'Copy source URL for Complete.pdf');
-    clickOverflowAction('Complete.pdf', 'Copy final URL for Complete.pdf');
-    clickOverflowAction('Complete.pdf', 'Delete file Complete.pdf');
+    clickOverflowAction('Active.zip', 'Pause');
+    fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
+    clickOverflowAction('Active.zip', 'Cancel');
+    clickOverflowAction('Failed.dmg', 'Retry');
+    clickOverflowAction('Complete.pdf', 'Download again');
+    clickOverflowAction('Complete.pdf', 'Open');
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Show in folder' }));
+    clickOverflowAction('Complete.pdf', 'Copy source URL');
+    clickOverflowAction('Complete.pdf', 'Copy final URL');
+    clickOverflowAction('Complete.pdf', 'Delete file');
     fireEvent.click(screen.getByRole('button', { name: 'Delete file' }));
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove from history' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5_000);
     });
@@ -429,7 +429,7 @@ describe('side panel', () => {
 
     await renderPanel({ downloadsPort: port });
 
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove from history' }));
 
     expect(visibleRows()).toEqual([]);
     expect(screen.getByText('Removed from history.')).toBeTruthy();
@@ -454,7 +454,7 @@ describe('side panel', () => {
 
     const { unmount } = await renderPanel({ downloadsPort: port });
 
-    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove Complete.pdf from history' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Complete.pdf' })).getByRole('button', { name: 'Remove from history' }));
     unmount();
 
     expect(port.eraseById).toHaveBeenCalledWith(4);
@@ -466,7 +466,7 @@ describe('side panel', () => {
     vi.mocked(port.open).mockRejectedValue(new Error('Chrome denied open.'));
 
     await renderPanel({ downloadsPort: port });
-    clickOverflowAction('Complete.pdf', 'Open Complete.pdf');
+    clickOverflowAction('Complete.pdf', 'Open');
 
     expect(await screen.findByText('Chrome denied open.')).toBeTruthy();
 
