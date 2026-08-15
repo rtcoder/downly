@@ -45,10 +45,12 @@ const STATISTICS_HISTORY_QUERY: DownloadSearchQuery = { orderBy: ['-startTime'] 
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function ManagerApp({
-  downloadsPort = new ChromeDownloadsApi(),
+  downloadsPort,
   runtimeMessages = defaultRuntimeMessages(),
   now = new Date(),
 }: ManagerAppProps) {
+  const defaultDownloadsPort = useMemo(() => new ChromeDownloadsApi(), []);
+  const resolvedDownloadsPort = downloadsPort ?? defaultDownloadsPort;
   const [view, setView] = useState<ManagerView>(() => initialManagerView());
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -67,11 +69,11 @@ export function ManagerApp({
     refresh,
     replaceActiveDownloads,
     statisticsDownloads,
-  } = useManagerDownloads(downloadsPort, runtimeMessages);
-  const { metrics } = useActiveDownloadPolling(downloadsPort, activeDownloads, replaceActiveDownloads);
+  } = useManagerDownloads(resolvedDownloadsPort, runtimeMessages);
+  const { metrics } = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
   const downloadActions = useMemo(
-    () => createDownloadActionService({ downloadsPort }),
-    [downloadsPort],
+    () => createDownloadActionService({ downloadsPort: resolvedDownloadsPort }),
+    [resolvedDownloadsPort],
   );
   const runAction = useCallback((action: () => Promise<unknown> | void) => {
     setActionError(null);

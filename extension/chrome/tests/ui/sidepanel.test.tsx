@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DownloadSearchQuery, DownloadsPort } from '../../src/application/download-repository';
 import type { DownloadRecord } from '../../src/domain/downloads/types';
+import { createChromeMock } from '../../src/test/chrome-mock';
 import { openFullManager, SidePanelApp, type RuntimeMessageSource } from '../../src/ui/sidepanel/SidePanelApp';
 
 function download(overrides: Partial<DownloadRecord> = {}): DownloadRecord {
@@ -227,6 +228,30 @@ describe('side panel', () => {
     });
 
     await waitFor(() => expect(visibleRows()).toEqual(['Refreshed.zip']));
+  });
+
+  it('does not restart the initial side panel load after local renders when using the default Chrome port', async () => {
+    const chrome = createChromeMock();
+    chrome.results.search = [{
+      id: 1,
+      filename: '/tmp/Initial.pdf',
+      url: 'https://example.com/initial.pdf',
+      startTime: '2026-08-14T10:00:00.000Z',
+      state: 'complete',
+    }];
+    vi.stubGlobal('chrome', chrome);
+
+    render(<SidePanelApp />);
+    await waitFor(() => expect(visibleRows()).toEqual(['Initial.pdf']));
+    expect(chrome.calls.filter((call) => call.method === 'search')).toHaveLength(2);
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search downloads' }), { target: { value: 'initial' } });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(chrome.calls.filter((call) => call.method === 'search')).toHaveLength(2);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
   });
 
   it('keeps newer refresh results when an older load resolves later', async () => {

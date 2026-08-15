@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DownloadSearchQuery, DownloadsPort } from '../../src/application/download-repository';
 import type { DownloadRecord, DownloadState, FileCategory } from '../../src/domain/downloads/types';
+import { createChromeMock } from '../../src/test/chrome-mock';
 import { ManagerApp, type RuntimeMessageSource } from '../../src/ui/manager/ManagerApp';
 
 function download(overrides: Partial<DownloadRecord> = {}): DownloadRecord {
@@ -493,6 +494,30 @@ describe('download manager', () => {
     });
 
     await waitFor(() => expect(visibleRows()).toEqual(['Refreshed.pdf']));
+  });
+
+  it('does not restart the initial manager load after local renders when using the default Chrome port', async () => {
+    const chrome = createChromeMock();
+    chrome.results.search = [{
+      id: 1,
+      filename: '/tmp/Initial.pdf',
+      url: 'https://example.com/initial.pdf',
+      startTime: '2026-08-14T10:00:00.000Z',
+      state: 'complete',
+    }];
+    vi.stubGlobal('chrome', chrome);
+
+    render(<ManagerApp />);
+    await waitFor(() => expect(visibleRows()).toEqual(['Initial.pdf']));
+    expect(chrome.calls.filter((call) => call.method === 'search')).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(chrome.calls.filter((call) => call.method === 'search')).toHaveLength(3);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
   });
 
   it('wires manager row actions through the application action service', async () => {
