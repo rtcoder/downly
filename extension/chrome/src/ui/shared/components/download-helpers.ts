@@ -26,3 +26,19 @@ export function progressPercent(download: DownloadRecord): number | null {
 
   return Math.max(0, Math.min(100, Math.round((download.bytesReceived / download.totalBytes) * 100)));
 }
+
+export function bestKnownDownloadSize(download: DownloadRecord): number | null {
+  if (download.fileSize > 0) {
+    return download.fileSize;
+  }
+
+  if (download.totalBytes > 0) {
+    return download.totalBytes;
+  }
+
+  if (download.bytesReceived > 0) {
+    return download.bytesReceived;
+  }
+
+  return null;
+}

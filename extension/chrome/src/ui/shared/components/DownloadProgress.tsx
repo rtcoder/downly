@@ -2,7 +2,7 @@ import type {ActiveDownloadMetrics} from '../../../application/active-download-s
 import type {DownloadRecord} from '../../../domain/downloads/types';
 import {formatBytes, formatEta, formatSpeed} from '../formatters';
 import {t} from '../i18n';
-import {displayFilename, progressPercent} from './download-helpers';
+import {bestKnownDownloadSize, displayFilename, progressPercent} from './download-helpers';
 
 export interface DownloadProgressProps {
   download: DownloadRecord;
@@ -12,23 +12,20 @@ export interface DownloadProgressProps {
 export function DownloadProgress({download, metrics}: DownloadProgressProps) {
   const matchingMetrics = metrics?.downloadId === download.id ? metrics : null;
   const percent = progressPercent(download);
-  const totalLabel = download.totalBytes > 0 ? formatBytes(download.totalBytes) : formatBytes(download.fileSize);
-  const progressText = t('shared.downloadProgress.of', {
-    received: formatBytes(download.bytesReceived),
-    total: totalLabel,
-  });
+  const isActive = download.state === 'in_progress';
+  const sizeText = formatBytes(bestKnownDownloadSize(download));
 
   return <div>
-    <div
+    {isActive ? <div
       aria-label={t('shared.downloadProgress.label', {filename: displayFilename(download)})}
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={percent ?? undefined}
-      aria-valuetext={progressText}
+      aria-valuetext={sizeText}
       role="progressbar"
-    />
-    <span>{progressText}</span>
-    {download.state === 'in_progress' ? <span>{formatSpeed(matchingMetrics?.bytesPerSecond)}</span> : null}
-    {download.state === 'in_progress' ? <span>{formatEta(matchingMetrics?.etaSeconds)}</span> : null}
+    /> : null}
+    <span>{sizeText}</span>
+    {isActive ? <span>{formatSpeed(matchingMetrics?.bytesPerSecond)}</span> : null}
+    {isActive ? <span>{formatEta(matchingMetrics?.etaSeconds)}</span> : null}
   </div>;
 }

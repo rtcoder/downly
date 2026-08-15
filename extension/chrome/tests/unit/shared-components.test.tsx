@@ -71,11 +71,12 @@ describe('shared download components', () => {
     expect(screen.getByRole('article', { name: 'Report.pdf' })).toBeTruthy();
     expect(screen.getByRole('toolbar', { name: 'Actions for' })).toBeTruthy();
     expect(screen.getByText('In progress')).toBeTruthy();
-    expect(screen.getByText('512 B of 1.0 KB')).toBeTruthy();
+    expect(screen.getByText('1.0 KB')).toBeTruthy();
+    expect(screen.queryByText('512 B of 1.0 KB')).toBeNull();
     expect(screen.getByText('512 B/s')).toBeTruthy();
     const progress = screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' });
     expect(progress.getAttribute('aria-valuenow')).toBe('50');
-    expect(progress.getAttribute('aria-valuetext')).toBe('512 B of 1.0 KB');
+    expect(progress.getAttribute('aria-valuetext')).toBe('1.0 KB');
 
     fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Cancel' }));
@@ -94,7 +95,8 @@ describe('shared download components', () => {
     />);
 
     expect(screen.getByText('Complete')).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Download progress for Report.pdf' }).getAttribute('aria-valuenow')).toBe('100');
+    expect(screen.queryByRole('progressbar', { name: 'Download progress for Report.pdf' })).toBeNull();
+    expect(screen.getByText('1.0 KB')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Open' }));
@@ -120,6 +122,8 @@ describe('shared download components', () => {
 
     expect(screen.getByText('Interrupted')).toBeTruthy();
     expect(screen.getByText('NETWORK_FAILED')).toBeTruthy();
+    expect(screen.queryByRole('progressbar', { name: 'Download progress for Report.pdf' })).toBeNull();
+    expect(screen.getByText('1.0 KB')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
 
