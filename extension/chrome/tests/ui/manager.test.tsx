@@ -451,6 +451,50 @@ describe('download manager', () => {
     expect(vi.mocked(port.search).mock.calls[5][0]).toEqual({ orderBy: ['-startTime'] });
   });
 
+  it('keeps rendered downloads visible during runtime invalidation refreshes', async () => {
+    const runtimeMessages = createRuntimeMessages();
+    const initial = download({ id: 1, basename: 'Initial', filename: '/tmp/Initial.pdf' });
+    const refreshed = download({ id: 2, basename: 'Refreshed', filename: '/tmp/Refreshed.pdf' });
+    const backgroundActive = deferred<DownloadRecord[]>();
+    const backgroundHistory = deferred<DownloadRecord[]>();
+    const backgroundStatistics = deferred<DownloadRecord[]>();
+    const { port } = createPort({ history: [initial] });
+    vi.mocked(port.search).mockImplementation((query: DownloadSearchQuery) => {
+      if (vi.mocked(port.search).mock.calls.length <= 3) {
+        if (query.state === 'in_progress') {
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([initial]);
+      }
+      if (query.state === 'in_progress') {
+        return backgroundActive.promise;
+      }
+      if (query.limit === undefined && query.orderBy?.includes('-startTime')) {
+        return backgroundStatistics.promise;
+      }
+      return backgroundHistory.promise;
+    });
+
+    await renderManager({ downloadsPort: port, runtimeMessages });
+    expect(visibleRows()).toEqual(['Initial.pdf']);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
+
+    act(() => runtimeMessages.send({ type: 'downloads-invalidated' }));
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(6));
+
+    expect(visibleRows()).toEqual(['Initial.pdf']);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
+
+    await act(async () => {
+      backgroundActive.resolve([]);
+      backgroundHistory.resolve([refreshed]);
+      backgroundStatistics.resolve([refreshed]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(visibleRows()).toEqual(['Refreshed.pdf']));
+  });
+
   it('wires manager row actions through the application action service', async () => {
     const active = download({ id: 1, basename: 'Active', extension: 'zip', filename: '/tmp/Active.zip', state: 'in_progress', paused: false });
     const paused = download({ id: 2, basename: 'Paused', extension: 'zip', filename: '/tmp/Paused.zip', state: 'in_progress', paused: true });

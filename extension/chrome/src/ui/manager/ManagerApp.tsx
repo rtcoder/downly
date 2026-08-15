@@ -211,10 +211,13 @@ function useManagerDownloads(
     setStatisticsDownloads((current) => mergeActiveFirst(downloads, current));
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options: { showLoading?: boolean } = {}) => {
+    const showLoading = options.showLoading ?? true;
     const sequence = refreshSequence.current + 1;
     refreshSequence.current = sequence;
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
 
     const [active, history, statisticsHistory] = await Promise.all([
       downloadsPort.search(ACTIVE_DOWNLOADS_QUERY),
@@ -271,7 +274,7 @@ function useManagerDownloads(
 
     const listener = (message: unknown) => {
       if (isDownloadsInvalidatedMessage(message)) {
-        void refresh();
+        void refresh({ showLoading: false });
       }
     };
 

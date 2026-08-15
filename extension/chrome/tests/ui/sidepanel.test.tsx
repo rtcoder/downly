@@ -190,6 +190,45 @@ describe('side panel', () => {
     await waitFor(() => expect(visibleRows()).toEqual(['Refreshed.zip']));
   });
 
+  it('keeps rendered downloads out of loading state during runtime invalidation refreshes', async () => {
+    const runtimeMessages = createRuntimeMessages();
+    const initial = download({ id: 1, basename: 'Initial', filename: '/tmp/Initial.pdf' });
+    const refreshed = download({ id: 2, basename: 'Refreshed', extension: 'zip', filename: '/tmp/Refreshed.zip', category: 'archive' });
+    const backgroundActive = deferred<DownloadRecord[]>();
+    const backgroundRecent = deferred<DownloadRecord[]>();
+    const { port } = createPort({ recent: [initial] });
+    vi.mocked(port.search).mockImplementation((query: DownloadSearchQuery) => {
+      if (vi.mocked(port.search).mock.calls.length <= 2) {
+        if (query.state === 'in_progress') {
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([initial]);
+      }
+      if (query.state === 'in_progress') {
+        return backgroundActive.promise;
+      }
+      return backgroundRecent.promise;
+    });
+
+    await renderPanel({ downloadsPort: port, runtimeMessages });
+    expect(visibleRows()).toEqual(['Initial.pdf']);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
+
+    act(() => runtimeMessages.send({ type: 'downloads-invalidated' }));
+    await waitFor(() => expect(port.search).toHaveBeenCalledTimes(4));
+
+    expect(visibleRows()).toEqual(['Initial.pdf']);
+    expect(screen.queryByText('Loading downloads...')).toBeNull();
+
+    await act(async () => {
+      backgroundActive.resolve([]);
+      backgroundRecent.resolve([refreshed]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(visibleRows()).toEqual(['Refreshed.zip']));
+  });
+
   it('keeps newer refresh results when an older load resolves later', async () => {
     const runtimeMessages = createRuntimeMessages();
     const firstActive = deferred<DownloadRecord[]>();

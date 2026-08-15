@@ -27,10 +27,13 @@ export function useDownloads(
   const [loading, setLoading] = useState(true);
   const refreshSequence = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options: { showLoading?: boolean } = {}) => {
+    const showLoading = options.showLoading ?? true;
     const sequence = refreshSequence.current + 1;
     refreshSequence.current = sequence;
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
     const [active, recent] = await Promise.all([
       downloadsPort.search(ACTIVE_DOWNLOADS_QUERY),
       downloadsPort.search(RECENT_DOWNLOADS_QUERY),
@@ -56,7 +59,7 @@ export function useDownloads(
 
     const listener = (message: unknown) => {
       if (isDownloadsInvalidatedMessage(message)) {
-        void refresh();
+        void refresh({ showLoading: false });
       }
     };
 
