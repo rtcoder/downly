@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActiveDownloadMetrics } from '../../src/application/active-download-sampler';
@@ -227,6 +227,32 @@ describe('shared download components', () => {
 
     expect(onCopySourceUrl).toHaveBeenCalledWith(1);
     expect(onCopyFinalUrl).toHaveBeenCalledWith(1);
+  });
+
+  it('renders download action controls as icon-only buttons with accessible names', () => {
+    render(<DownloadActions
+      download={download({
+        state: 'complete',
+        url: 'https://origin.example/report.pdf',
+        finalUrl: 'https://cdn.example/report.pdf',
+      })}
+      onCopyFinalUrl={vi.fn()}
+      onCopySourceUrl={vi.fn()}
+      onDownloadAgain={vi.fn()}
+      onEraseHistory={vi.fn()}
+      onOpen={vi.fn()}
+      onRemoveFile={vi.fn()}
+      onShowInFolder={vi.fn()}
+    />);
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Actions for Report.pdf' });
+    expect(screen.getByRole('button', { name: 'Download Report.pdf again' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy source URL for Report.pdf' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy final URL for Report.pdf' })).toBeTruthy();
+    expect(within(toolbar).queryByText('Download again')).toBeNull();
+    expect(within(toolbar).queryByText('Copy source URL')).toBeNull();
+    expect(within(toolbar).queryByText('Copy final URL')).toBeNull();
+    expect(within(toolbar).getAllByRole('img', { hidden: true }).length).toBeGreaterThanOrEqual(6);
   });
 
   it('ignores stale metrics from a different download row', () => {

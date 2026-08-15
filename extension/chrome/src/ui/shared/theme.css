@@ -184,6 +184,32 @@ nav,
   align-items: center;
 }
 
+.download-actions {
+  gap: 0.4rem;
+}
+
+.download-action-button {
+  align-items: center;
+  aspect-ratio: 1;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0;
+  width: 2.25rem;
+}
+
+.download-action-button svg {
+  fill: none;
+  height: 1.05rem;
+  pointer-events: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 1.05rem;
+}
+
 article {
   border: 1px solid var(--downly-border);
   border-radius: 8px;
@@ -294,6 +320,15 @@ fieldset {
   [role="toolbar"] {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .download-actions {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .download-action-button {
+    width: 2.25rem;
   }
 }
 
