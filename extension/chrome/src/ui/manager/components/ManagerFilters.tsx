@@ -1,6 +1,6 @@
-import type { DownloadState, FileCategory } from '../../../domain/downloads/types';
-import { t, type I18nKey } from '../../shared/i18n';
-import { MANAGER_GROUPS, MANAGER_SORTS, type ManagerGroupKey, type ManagerSortKey } from './manager-options';
+import type {DownloadState, FileCategory} from '../../../domain/downloads/types';
+import {type I18nKey, t} from '../../shared';
+import {MANAGER_GROUPS, MANAGER_SORTS, type ManagerGroupKey, type ManagerSortKey} from './manager-options';
 
 export interface ManagerFilterState {
   state: '' | DownloadState;
@@ -48,15 +48,15 @@ const categoryLabelKeys: Record<FileCategory, I18nKey> = {
 };
 
 export function ManagerFilters({
-  filters,
-  groupBy,
-  sortBy,
-  onFiltersChange,
-  onGroupByChange,
-  onSortByChange,
-}: ManagerFiltersProps) {
+                                 filters,
+                                 groupBy,
+                                 sortBy,
+                                 onFiltersChange,
+                                 onGroupByChange,
+                                 onSortByChange,
+                               }: ManagerFiltersProps) {
   const update = <K extends keyof ManagerFilterState>(key: K, value: ManagerFilterState[K]) => {
-    onFiltersChange({ ...filters, [key]: value });
+    onFiltersChange({...filters, [key]: value});
   };
 
   return <form aria-label={t('manager.filters.form')}>
@@ -101,7 +101,8 @@ export function ManagerFilters({
         value={filters.category}
       >
         <option value="">{t('manager.filters.anyCategory')}</option>
-        {categories.map((category) => <option key={category} value={category}>{t(categoryLabelKeys[category])}</option>)}
+        {categories.map((category) => <option key={category}
+                                              value={category}>{t(categoryLabelKeys[category])}</option>)}
       </select>
     </label>
     <label>

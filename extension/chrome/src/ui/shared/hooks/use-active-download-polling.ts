@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 
-import { ActiveDownloadSampler, type ActiveDownloadMetrics } from '../../../application/active-download-sampler';
-import type { DownloadsPort } from '../../../application/download-repository';
-import type { DownloadRecord } from '../../../domain/downloads/types';
+import {type ActiveDownloadMetrics, ActiveDownloadSampler} from '../../../application/active-download-sampler';
+import type {DownloadsPort} from '../../../application/download-repository';
+import type {DownloadRecord} from '../../../domain/downloads/types';
 
 export interface UseActiveDownloadPollingResult {
   metrics: ActiveDownloadMetrics[];
@@ -41,7 +41,7 @@ export function useActiveDownloadPolling(
 
     let active = true;
     const pollActiveDownloads = async () => {
-      const downloads = await downloadsPort.search({ state: 'in_progress' });
+      const downloads = await downloadsPort.search({state: 'in_progress'});
       if (active) {
         onActiveDownloads(downloads);
       }
@@ -57,5 +57,5 @@ export function useActiveDownloadPolling(
     };
   }, [downloadsPort, hasActiveDownloads, onActiveDownloads, visible]);
 
-  return { metrics };
+  return {metrics};
 }

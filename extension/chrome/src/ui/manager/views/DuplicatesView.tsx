@@ -1,11 +1,7 @@
-import {
-  detectPossibleDuplicates,
-  type DuplicateMatch,
-} from '../../../domain/downloads/duplicate-detector';
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { EmptyState } from '../../shared';
-import { displayFilename } from '../../shared/components/download-helpers';
-import { t } from '../../shared/i18n';
+import {detectPossibleDuplicates, type DuplicateMatch} from '../../../domain/downloads/duplicate-detector';
+import type {DownloadRecord} from '../../../domain/downloads/types';
+import {EmptyState, t} from '../../shared';
+import {displayFilename} from '../../shared/components/download-helpers';
 
 export interface DuplicatesViewProps {
   downloads: DownloadRecord[];
@@ -19,10 +15,10 @@ interface DuplicateGroup {
 }
 
 export function DuplicatesView({
-  downloads,
-  loading,
-  onShowMatchingDownload,
-}: DuplicatesViewProps) {
+                                 downloads,
+                                 loading,
+                                 onShowMatchingDownload,
+                               }: DuplicatesViewProps) {
   if (loading) {
     return <p>{t('manager.duplicates.loading')}</p>;
   }
@@ -39,7 +35,7 @@ export function DuplicatesView({
   return <section aria-label={t('manager.duplicates.section')}>
     {groups.map((group) => (
       <section
-        aria-label={t('manager.duplicates.itemLabel', { filename: displayFilename(group.candidate) })}
+        aria-label={t('manager.duplicates.itemLabel', {filename: displayFilename(group.candidate)})}
         key={group.candidate.id}
       >
         <p>{t('manager.duplicates.heading')}</p>
@@ -48,12 +44,12 @@ export function DuplicatesView({
           {group.matches.map((match) => (
             <li key={match.item.id}>
               <strong>{displayFilename(match.item)}</strong>
-              <span>{t('manager.duplicates.confidence', { confidence: match.confidence })}</span>
+              <span>{t('manager.duplicates.confidence', {confidence: match.confidence})}</span>
               <ul>
                 {match.reasons.map((reason) => <li key={reason}>{reason}</li>)}
               </ul>
               <button
-                aria-label={t('manager.duplicates.showMatchLabel', { filename: displayFilename(match.item) })}
+                aria-label={t('manager.duplicates.showMatchLabel', {filename: displayFilename(match.item)})}
                 onClick={() => onShowMatchingDownload(match.item)}
                 type="button"
               >

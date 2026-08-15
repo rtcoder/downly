@@ -1,14 +1,14 @@
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { t } from '../i18n';
+import type {DownloadRecord} from '../../../domain/downloads/types';
+import {t} from '../i18n';
 
 export interface DownloadStatusProps {
   download: DownloadRecord;
 }
 
-export function DownloadStatus({ download }: DownloadStatusProps) {
+export function DownloadStatus({download}: DownloadStatusProps) {
   const status = statusText(download);
 
-  return <div aria-label={t('shared.downloadStatus.label', { status })}>
+  return <div aria-label={t('shared.downloadStatus.label', {status})}>
     <span>{status}</span>
     {download.paused ? <span>{t('shared.downloadStatus.paused')}</span> : null}
     {download.error ? <span>{download.error}</span> : null}

@@ -1,14 +1,19 @@
-import { type DragEvent, useEffect, useMemo, useState } from 'react';
+import {type DragEvent, useEffect, useMemo, useState} from 'react';
 
-import { getSettings, replaceRules, updateSettings } from '../../../application/settings-repository';
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { validateRule } from '../../../domain/organizer/evaluate-rule';
-import { evaluateRules } from '../../../domain/organizer/evaluate-rules';
-import { BUILT_IN_ORGANIZER_PRESETS } from '../../../domain/organizer/presets';
-import type { ConflictAction, DownloadRule, RuleCondition, RuleField, RuleOperator } from '../../../domain/organizer/types';
-import type { DownlySettings } from '../../../domain/settings/types';
-import { EmptyState, ToastRegion } from '../../shared';
-import { t } from '../../shared/i18n';
+import {getSettings, replaceRules, updateSettings} from '../../../application/settings-repository';
+import type {DownloadRecord} from '../../../domain/downloads/types';
+import {validateRule} from '../../../domain/organizer/evaluate-rule';
+import {evaluateRules} from '../../../domain/organizer/evaluate-rules';
+import {BUILT_IN_ORGANIZER_PRESETS} from '../../../domain/organizer/presets';
+import type {
+  ConflictAction,
+  DownloadRule,
+  RuleCondition,
+  RuleField,
+  RuleOperator,
+} from '../../../domain/organizer/types';
+import type {DownlySettings} from '../../../domain/settings/types';
+import {EmptyState, t, ToastRegion} from '../../shared';
 
 export interface OrganizerViewProps {
   previewDownload?: DownloadRecord | null;
@@ -18,20 +23,20 @@ type DraftRule = Omit<DownloadRule, 'conditions'> & { conditions: DraftCondition
 type DraftCondition = Omit<RuleCondition, 'value'> & { value: string };
 
 const FIELDS: Array<{ id: RuleField; label: string }> = [
-  { id: 'sourceDomain', label: t('manager.organizer.field.sourceDomain') },
-  { id: 'filename', label: t('manager.organizer.field.filename') },
-  { id: 'extension', label: t('manager.organizer.field.extension') },
-  { id: 'mime', label: t('manager.organizer.field.mime') },
-  { id: 'category', label: t('manager.organizer.field.category') },
+  {id: 'sourceDomain', label: t('manager.organizer.field.sourceDomain')},
+  {id: 'filename', label: t('manager.organizer.field.filename')},
+  {id: 'extension', label: t('manager.organizer.field.extension')},
+  {id: 'mime', label: t('manager.organizer.field.mime')},
+  {id: 'category', label: t('manager.organizer.field.category')},
 ];
 
 const OPERATORS: Array<{ id: RuleOperator; label: string }> = [
-  { id: 'equals', label: t('manager.organizer.operator.equals') },
-  { id: 'endsWith', label: t('manager.organizer.operator.endsWith') },
-  { id: 'contains', label: t('manager.organizer.operator.contains') },
-  { id: 'startsWith', label: t('manager.organizer.operator.startsWith') },
-  { id: 'regex', label: t('manager.organizer.operator.regex') },
-  { id: 'oneOf', label: t('manager.organizer.operator.oneOf') },
+  {id: 'equals', label: t('manager.organizer.operator.equals')},
+  {id: 'endsWith', label: t('manager.organizer.operator.endsWith')},
+  {id: 'contains', label: t('manager.organizer.operator.contains')},
+  {id: 'startsWith', label: t('manager.organizer.operator.startsWith')},
+  {id: 'regex', label: t('manager.organizer.operator.regex')},
+  {id: 'oneOf', label: t('manager.organizer.operator.oneOf')},
 ];
 
 const OPERATORS_BY_FIELD: Record<RuleField, RuleOperator[]> = {
@@ -42,7 +47,7 @@ const OPERATORS_BY_FIELD: Record<RuleField, RuleOperator[]> = {
   category: ['equals'],
 };
 
-const EMPTY_CONDITION: DraftCondition = { field: 'sourceDomain', operator: 'equals', value: '' };
+const EMPTY_CONDITION: DraftCondition = {field: 'sourceDomain', operator: 'equals', value: ''};
 
 const FALLBACK_PREVIEW_DOWNLOAD: DownloadRecord = {
   id: -1,
@@ -69,7 +74,7 @@ const FALLBACK_PREVIEW_DOWNLOAD: DownloadRecord = {
   estimatedEndTime: null,
 };
 
-export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
+export function OrganizerView({previewDownload = null}: OrganizerViewProps) {
   const [settings, setSettings] = useState<DownlySettings | null>(null);
   const [editing, setEditing] = useState<DraftRule | null>(null);
   const [draggedRuleId, setDraggedRuleId] = useState<string | null>(null);
@@ -106,7 +111,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
     return <section aria-label={t('manager.organizer.settings')}>
       <h2>{t('manager.organizer.title')}</h2>
       <p>{t('manager.organizer.loading')}</p>
-      <OrganizerNotifications message={storageError} onDismiss={() => setStorageError(null)} />
+      <OrganizerNotifications message={storageError} onDismiss={() => setStorageError(null)}/>
     </section>;
   }
 
@@ -137,7 +142,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
       name: '',
       enabled: true,
       priority: nextPriority(orderedRules),
-      conditions: [{ ...EMPTY_CONDITION }],
+      conditions: [{...EMPTY_CONDITION}],
       targetPathTemplate: '',
     });
   };
@@ -148,7 +153,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
   };
 
   const installPreset = async (preset: DownloadRule) => {
-    const installedRule = { ...preset, enabled: true };
+    const installedRule = {...preset, enabled: true};
     const existingIndex = orderedRules.findIndex((rule) => rule.id === preset.id);
     const rules = existingIndex >= 0
       ? orderedRules.map((rule, index) => index === existingIndex ? installedRule : rule)
@@ -188,7 +193,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
   };
 
   const toggleRule = (ruleId: string) => {
-    void saveRules(orderedRules.map((rule) => rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule));
+    void saveRules(orderedRules.map((rule) => rule.id === ruleId ? {...rule, enabled: !rule.enabled} : rule));
   };
 
   const deleteRule = (ruleId: string) => {
@@ -237,7 +242,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
       <label>
         <input
           checked={settings.organizerEnabled}
-          onChange={(event) => void saveSettings({ organizerEnabled: event.target.checked })}
+          onChange={(event) => void saveSettings({organizerEnabled: event.target.checked})}
           type="checkbox"
         />
         {t('manager.organizer.enable')}
@@ -246,7 +251,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
         <span>{t('manager.organizer.conflictAction')}</span>
         <select
           aria-label={t('manager.organizer.conflictAction')}
-          onChange={(event) => void saveSettings({ conflictAction: event.target.value as ConflictAction })}
+          onChange={(event) => void saveSettings({conflictAction: event.target.value as ConflictAction})}
           value={settings.conflictAction}
         >
           <option value="uniquify">{t('manager.organizer.conflict.uniquify')}</option>
@@ -261,8 +266,8 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
       {BUILT_IN_ORGANIZER_PRESETS.map((preset) => (
         <button key={preset.id} onClick={() => void installPreset(preset)} type="button">
           {orderedRules.some((rule) => rule.id === preset.id)
-            ? t('manager.organizer.enablePreset', { name: preset.name })
-            : t('manager.organizer.installPreset', { name: preset.name })}
+            ? t('manager.organizer.enablePreset', {name: preset.name})
+            : t('manager.organizer.installPreset', {name: preset.name})}
         </button>
       ))}
     </section>
@@ -273,12 +278,13 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
         <button onClick={startNewRule} type="button">{t('manager.organizer.newRule')}</button>
       </header>
       {orderedRules.length === 0 ? (
-        <EmptyState title={t('manager.organizer.emptyRulesTitle')} description={t('manager.organizer.emptyRulesDescription')} />
+        <EmptyState title={t('manager.organizer.emptyRulesTitle')}
+                    description={t('manager.organizer.emptyRulesDescription')}/>
       ) : (
         orderedRules.map((rule, index) => (
           <article
             aria-grabbed={draggedRuleId === rule.id ? 'true' : undefined}
-            aria-label={t('manager.organizer.ruleLabel', { name: rule.name })}
+            aria-label={t('manager.organizer.ruleLabel', {name: rule.name})}
             draggable
             key={rule.id}
             onDragEnd={() => setDraggedRuleId(null)}
@@ -293,24 +299,26 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
                 onChange={() => toggleRule(rule.id)}
                 type="checkbox"
               />
-              {t('manager.organizer.enableRule', { name: rule.name })}
+              {t('manager.organizer.enableRule', {name: rule.name})}
             </label>
             <p>{describeConditions(rule.conditions)}</p>
             <p>{rule.targetPathTemplate}</p>
             <button disabled={index === 0} onClick={() => moveRule(rule.id, -1)} type="button">
-              {t('manager.organizer.moveUp', { name: rule.name })}
+              {t('manager.organizer.moveUp', {name: rule.name})}
             </button>
             <button disabled={index === orderedRules.length - 1} onClick={() => moveRule(rule.id, 1)} type="button">
-              {t('manager.organizer.moveDown', { name: rule.name })}
+              {t('manager.organizer.moveDown', {name: rule.name})}
             </button>
-            <button onClick={() => startEditRule(rule)} type="button">{t('manager.organizer.editRule', { name: rule.name })}</button>
-            <button onClick={() => deleteRule(rule.id)} type="button">{t('manager.organizer.deleteRule', { name: rule.name })}</button>
+            <button onClick={() => startEditRule(rule)}
+                    type="button">{t('manager.organizer.editRule', {name: rule.name})}</button>
+            <button onClick={() => deleteRule(rule.id)}
+                    type="button">{t('manager.organizer.deleteRule', {name: rule.name})}</button>
           </article>
         ))
       )}
     </section>
 
-    <PathPreview conflictAction={settings.conflictAction} preview={preview} sampleDownload={sampleDownload} />
+    <PathPreview conflictAction={settings.conflictAction} preview={preview} sampleDownload={sampleDownload}/>
 
     {editing ? (
       <RuleEditor
@@ -328,7 +336,7 @@ export function OrganizerView({ previewDownload = null }: OrganizerViewProps) {
       />
     ) : null}
 
-    <OrganizerNotifications message={storageError} onDismiss={() => setStorageError(null)} />
+    <OrganizerNotifications message={storageError} onDismiss={() => setStorageError(null)}/>
   </section>;
 }
 
@@ -340,12 +348,12 @@ interface RuleEditorProps {
   validationError: string | null;
 }
 
-function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: RuleEditorProps) {
+function RuleEditor({draft, onCancel, onChange, onSave, validationError}: RuleEditorProps) {
   const updateCondition = (index: number, patch: Partial<DraftCondition>) => {
     onChange({
       ...draft,
       conditions: draft.conditions.map((condition, conditionIndex) => (
-        conditionIndex === index ? normalizeDraftCondition({ ...condition, ...patch }) : condition
+        conditionIndex === index ? normalizeDraftCondition({...condition, ...patch}) : condition
       )),
     });
   };
@@ -354,19 +362,19 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
     event.preventDefault();
     onSave();
   }}>
-    <h3>{draft.name ? t('manager.organizer.editNamedRule', { name: draft.name }) : t('manager.organizer.newRule')}</h3>
+    <h3>{draft.name ? t('manager.organizer.editNamedRule', {name: draft.name}) : t('manager.organizer.newRule')}</h3>
     <label>
       <span>{t('manager.organizer.ruleName')}</span>
       <input
         aria-label={t('manager.organizer.ruleName')}
-        onChange={(event) => onChange({ ...draft, name: event.target.value })}
+        onChange={(event) => onChange({...draft, name: event.target.value})}
         value={draft.name}
       />
     </label>
     <label>
       <input
         checked={draft.enabled}
-        onChange={(event) => onChange({ ...draft, enabled: event.target.checked })}
+        onChange={(event) => onChange({...draft, enabled: event.target.checked})}
         type="checkbox"
       />
       {t('manager.organizer.ruleEnabled')}
@@ -375,12 +383,12 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
     <fieldset>
       <legend>{t('manager.organizer.conditionsLegend')}</legend>
       {draft.conditions.map((condition, index) => (
-        <section aria-label={t('manager.organizer.conditionLabel', { number: index + 1 })} key={index}>
+        <section aria-label={t('manager.organizer.conditionLabel', {number: index + 1})} key={index}>
           <label>
             <span>{t('manager.organizer.field')}</span>
             <select
-              aria-label={t('manager.organizer.conditionFieldLabel', { number: index + 1 })}
-              onChange={(event) => updateCondition(index, { field: event.target.value as RuleField })}
+              aria-label={t('manager.organizer.conditionFieldLabel', {number: index + 1})}
+              onChange={(event) => updateCondition(index, {field: event.target.value as RuleField})}
               value={condition.field}
             >
               {FIELDS.map((field) => <option key={field.id} value={field.id}>{field.label}</option>)}
@@ -389,18 +397,19 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
           <label>
             <span>{t('manager.organizer.operator')}</span>
             <select
-              aria-label={t('manager.organizer.conditionOperatorLabel', { number: index + 1 })}
-              onChange={(event) => updateCondition(index, { operator: event.target.value as RuleOperator })}
+              aria-label={t('manager.organizer.conditionOperatorLabel', {number: index + 1})}
+              onChange={(event) => updateCondition(index, {operator: event.target.value as RuleOperator})}
               value={condition.operator}
             >
-              {operatorsForField(condition.field).map((operator) => <option key={operator.id} value={operator.id}>{operator.label}</option>)}
+              {operatorsForField(condition.field).map((operator) => <option key={operator.id}
+                                                                            value={operator.id}>{operator.label}</option>)}
             </select>
           </label>
           <label>
             <span>{t('manager.organizer.value')}</span>
             <input
-              aria-label={t('manager.organizer.conditionValueLabel', { number: index + 1 })}
-              onChange={(event) => updateCondition(index, { value: event.target.value })}
+              aria-label={t('manager.organizer.conditionValueLabel', {number: index + 1})}
+              onChange={(event) => updateCondition(index, {value: event.target.value})}
               value={condition.value}
             />
           </label>
@@ -412,12 +421,12 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
             })}
             type="button"
           >
-            {t('manager.organizer.removeCondition', { number: index + 1 })}
+            {t('manager.organizer.removeCondition', {number: index + 1})}
           </button>
         </section>
       ))}
       <button
-        onClick={() => onChange({ ...draft, conditions: [...draft.conditions, { ...EMPTY_CONDITION }] })}
+        onClick={() => onChange({...draft, conditions: [...draft.conditions, {...EMPTY_CONDITION}]})}
         type="button"
       >
         {t('manager.organizer.addCondition')}
@@ -428,7 +437,7 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
       <span>{t('manager.organizer.targetPathTemplate')}</span>
       <input
         aria-label={t('manager.organizer.targetPathTemplate')}
-        onChange={(event) => onChange({ ...draft, targetPathTemplate: event.target.value })}
+        onChange={(event) => onChange({...draft, targetPathTemplate: event.target.value})}
         value={draft.targetPathTemplate}
       />
     </label>
@@ -439,32 +448,32 @@ function RuleEditor({ draft, onCancel, onChange, onSave, validationError }: Rule
 }
 
 function PathPreview({
-  conflictAction,
-  preview,
-  sampleDownload,
-}: {
+                       conflictAction,
+                       preview,
+                       sampleDownload,
+                     }: {
   conflictAction: ConflictAction;
   preview: ReturnType<typeof evaluateRules>;
   sampleDownload: DownloadRecord;
 }) {
   return <section aria-label={t('manager.organizer.preview')}>
     <h3>{t('manager.organizer.preview')}</h3>
-    <p>{t('manager.organizer.sample', { filename: sampleDownload.filename })}</p>
+    <p>{t('manager.organizer.sample', {filename: sampleDownload.filename})}</p>
     {preview ? (
       <>
         <p>{preview.filename}</p>
-        <p>{t('manager.organizer.matchedRule', { ruleId: preview.ruleId })}</p>
+        <p>{t('manager.organizer.matchedRule', {ruleId: preview.ruleId})}</p>
       </>
     ) : (
       <p>{t('manager.organizer.noPreviewMatch')}</p>
     )}
-    <p>{t('manager.organizer.conflictActionValue', { action: conflictAction })}</p>
+    <p>{t('manager.organizer.conflictActionValue', {action: conflictAction})}</p>
   </section>;
 }
 
-function OrganizerNotifications({ message, onDismiss }: { message: string | null; onDismiss: () => void }) {
+function OrganizerNotifications({message, onDismiss}: { message: string | null; onDismiss: () => void }) {
   return <ToastRegion
-    messages={message ? [{ id: 'organizer-storage-error', tone: 'error', message }] : []}
+    messages={message ? [{id: 'organizer-storage-error', tone: 'error', message}] : []}
     onDismiss={onDismiss}
   />;
 }
@@ -495,14 +504,14 @@ function fromDraft(draft: DraftRule): DownloadRule {
 }
 
 function normalizePriorities(rules: DownloadRule[]): DownloadRule[] {
-  return rules.map((rule, index) => ({ ...rule, priority: (index + 1) * 10 }));
+  return rules.map((rule, index) => ({...rule, priority: (index + 1) * 10}));
 }
 
 function sortRulesByPriority(rules: DownloadRule[]): DownloadRule[] {
   return rules
-    .map((rule, index) => ({ rule, index }))
+    .map((rule, index) => ({rule, index}))
     .sort((left, right) => left.rule.priority - right.rule.priority || left.index - right.index)
-    .map(({ rule }) => rule);
+    .map(({rule}) => rule);
 }
 
 function nextPriority(rules: DownloadRule[]): number {
@@ -534,7 +543,7 @@ function operatorIsSupported(field: RuleField, operator: RuleOperator): boolean 
 function normalizeDraftCondition(condition: DraftCondition): DraftCondition {
   return operatorIsSupported(condition.field, condition.operator)
     ? condition
-    : { ...condition, operator: OPERATORS_BY_FIELD[condition.field][0] };
+    : {...condition, operator: OPERATORS_BY_FIELD[condition.field][0]};
 }
 
 function labelForField(field: RuleField): string {

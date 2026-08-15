@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import {t} from '../i18n';
 
 export function formatDuration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds < 0) {
@@ -26,5 +26,5 @@ export function formatEta(seconds: number | null | undefined): string {
     return t('shared.formatters.etaUnknown');
   }
 
-  return t('shared.formatters.eta', { duration: formatDuration(seconds) });
+  return t('shared.formatters.eta', {duration: formatDuration(seconds)});
 }

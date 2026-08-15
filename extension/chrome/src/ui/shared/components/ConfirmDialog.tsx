@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef } from 'react';
+import {useEffect, useId, useRef} from 'react';
 
-import { t } from '../i18n';
+import {t} from '../i18n';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -13,14 +13,14 @@ export interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  open,
-  title,
-  description,
-  confirmLabel,
-  cancelLabel = t('shared.confirm.cancel'),
-  onConfirm,
-  onCancel,
-}: ConfirmDialogProps) {
+                                open,
+                                title,
+                                description,
+                                confirmLabel,
+                                cancelLabel = t('shared.confirm.cancel'),
+                                onConfirm,
+                                onCancel,
+                              }: ConfirmDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);

@@ -1,21 +1,25 @@
-import { useMemo, useState } from 'react';
+import {useMemo, useState} from 'react';
+import type {DownloadRecord} from '../../../domain/downloads/types';
 
-import { aggregateDownloadStats } from '../../../domain/stats/aggregate-stats';
-import { STATS_RANGES, type DownloadStats, type StatsPeriodBucket, type StatsRange, type StatsTopItem } from '../../../domain/stats/types';
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { EmptyState } from '../../shared';
-import { formatBytes } from '../../shared/formatters';
-import { t, type I18nKey } from '../../shared/i18n';
+import {aggregateDownloadStats} from '../../../domain/stats/aggregate-stats';
+import {
+  type DownloadStats,
+  STATS_RANGES,
+  type StatsPeriodBucket,
+  type StatsRange,
+  type StatsTopItem,
+} from '../../../domain/stats/types';
+import {EmptyState, formatBytes, type I18nKey, t} from '../../shared';
 
 export interface StatisticsViewProps {
   downloads: DownloadRecord[];
   now: Date;
 }
 
-export function StatisticsView({ downloads, now }: StatisticsViewProps) {
+export function StatisticsView({downloads, now}: StatisticsViewProps) {
   const [range, setRange] = useState<StatsRange>('30-days');
   const stats = useMemo(
-    () => aggregateDownloadStats(downloads, { range, now }),
+    () => aggregateDownloadStats(downloads, {range, now}),
     [downloads, now, range],
   );
 
@@ -40,12 +44,12 @@ export function StatisticsView({ downloads, now }: StatisticsViewProps) {
     {stats.hasHistory ? (
       <>
         <section aria-label={t('manager.statistics.cards')}>
-          <StatCard label={t('manager.statistics.downloadsToday')} value={formatNumber(stats.downloadsToday)} />
-          <StatCard label={t('manager.statistics.downloadsThisMonth')} value={formatNumber(stats.downloadsThisMonth)} />
-          <StatCard label={t('manager.statistics.bytesThisMonth')} value={formatBytes(stats.bytesDownloadedThisMonth)} />
-          <StatCard label={t('manager.statistics.bytesInRange')} value={formatBytes(stats.range.bytesDownloaded)} />
-          <StatCard label={t('manager.statistics.completedCount')} value={formatNumber(stats.completedCount)} />
-          <StatCard label={t('manager.statistics.interruptedCount')} value={formatNumber(stats.interruptedCount)} />
+          <StatCard label={t('manager.statistics.downloadsToday')} value={formatNumber(stats.downloadsToday)}/>
+          <StatCard label={t('manager.statistics.downloadsThisMonth')} value={formatNumber(stats.downloadsThisMonth)}/>
+          <StatCard label={t('manager.statistics.bytesThisMonth')} value={formatBytes(stats.bytesDownloadedThisMonth)}/>
+          <StatCard label={t('manager.statistics.bytesInRange')} value={formatBytes(stats.range.bytesDownloaded)}/>
+          <StatCard label={t('manager.statistics.completedCount')} value={formatNumber(stats.completedCount)}/>
+          <StatCard label={t('manager.statistics.interruptedCount')} value={formatNumber(stats.interruptedCount)}/>
           <StatCard
             label={t('manager.statistics.largestItem')}
             value={stats.largestItem ? formatBytes(stats.largestItem.size) : t('manager.statistics.none')}
@@ -54,20 +58,20 @@ export function StatisticsView({ downloads, now }: StatisticsViewProps) {
           <StatCard
             label={t('manager.statistics.topCategory')}
             value={stats.topCategory?.label ?? t('manager.statistics.none')}
-            detail={stats.topCategory ? t('manager.statistics.downloadCount', { count: formatNumber(stats.topCategory.count) }) : undefined}
+            detail={stats.topCategory ? t('manager.statistics.downloadCount', {count: formatNumber(stats.topCategory.count)}) : undefined}
           />
           <StatCard
             label={t('manager.statistics.topDomain')}
             value={stats.topDomain?.label ?? t('manager.statistics.none')}
-            detail={stats.topDomain ? t('manager.statistics.downloadCount', { count: formatNumber(stats.topDomain.count) }) : undefined}
+            detail={stats.topDomain ? t('manager.statistics.downloadCount', {count: formatNumber(stats.topDomain.count)}) : undefined}
           />
         </section>
 
         <section aria-label={t('manager.statistics.charts')}>
-          <BytesChart buckets={stats.bytesByPeriod} />
-          <TopItemsTable title={t('manager.statistics.countByCategory')} items={stats.countByCategory} />
-          <TopItemsTable title={t('manager.statistics.countByDomain')} items={stats.countByDomain} />
-          <StateChart stats={stats} />
+          <BytesChart buckets={stats.bytesByPeriod}/>
+          <TopItemsTable title={t('manager.statistics.countByCategory')} items={stats.countByCategory}/>
+          <TopItemsTable title={t('manager.statistics.countByDomain')} items={stats.countByDomain}/>
+          <StateChart stats={stats}/>
         </section>
       </>
     ) : (
@@ -93,7 +97,7 @@ interface StatCardProps {
   detail?: string;
 }
 
-function StatCard({ label, value, detail }: StatCardProps) {
+function StatCard({label, value, detail}: StatCardProps) {
   return <section aria-label={label}>
     <h3>{label}</h3>
     <p>{value}</p>
@@ -101,7 +105,7 @@ function StatCard({ label, value, detail }: StatCardProps) {
   </section>;
 }
 
-function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
+function BytesChart({buckets}: { buckets: StatsPeriodBucket[] }) {
   const maxBytes = Math.max(...buckets.map((bucket) => bucket.bytesDownloaded), 0);
   const width = Math.max(240, buckets.length * 44);
   const height = 120;
@@ -120,7 +124,7 @@ function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
             const y = height - barHeight - 20;
 
             return <g key={bucket.key}>
-              <rect height={barHeight} width={barWidth} x={x} y={y} />
+              <rect height={barHeight} width={barWidth} x={x} y={y}/>
               <text aria-hidden="true" fontSize="9" textAnchor="middle" x={x + barWidth / 2} y={height - 6}>
                 {bucket.label}
               </text>
@@ -129,20 +133,20 @@ function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
         </svg>
         <table aria-label={t('manager.statistics.bytesByPeriodData')}>
           <thead>
-            <tr>
-              <th scope="col">{t('manager.statistics.period')}</th>
-              <th scope="col">{t('manager.statistics.downloads')}</th>
-              <th scope="col">{t('manager.statistics.bytes')}</th>
-            </tr>
+          <tr>
+            <th scope="col">{t('manager.statistics.period')}</th>
+            <th scope="col">{t('manager.statistics.downloads')}</th>
+            <th scope="col">{t('manager.statistics.bytes')}</th>
+          </tr>
           </thead>
           <tbody>
-            {buckets.map((bucket) => (
-              <tr key={bucket.key}>
-                <td>{bucket.label}</td>
-                <td>{formatNumber(bucket.count)}</td>
-                <td>{formatBytes(bucket.bytesDownloaded)}</td>
-              </tr>
-            ))}
+          {buckets.map((bucket) => (
+            <tr key={bucket.key}>
+              <td>{bucket.label}</td>
+              <td>{formatNumber(bucket.count)}</td>
+              <td>{formatBytes(bucket.bytesDownloaded)}</td>
+            </tr>
+          ))}
           </tbody>
         </table>
       </>
@@ -150,7 +154,7 @@ function BytesChart({ buckets }: { buckets: StatsPeriodBucket[] }) {
   </figure>;
 }
 
-function TopItemsTable({ title, items }: { title: string; items: StatsTopItem[] }) {
+function TopItemsTable({title, items}: { title: string; items: StatsTopItem[] }) {
   const maxCount = Math.max(...items.map((item) => item.count), 0);
 
   return <section aria-label={title}>
@@ -160,29 +164,29 @@ function TopItemsTable({ title, items }: { title: string; items: StatsTopItem[] 
     ) : (
       <table aria-label={title}>
         <thead>
-          <tr>
-            <th scope="col">{t('manager.statistics.name')}</th>
-            <th scope="col">{t('manager.statistics.count')}</th>
-            <th scope="col">{t('manager.statistics.share')}</th>
-          </tr>
+        <tr>
+          <th scope="col">{t('manager.statistics.name')}</th>
+          <th scope="col">{t('manager.statistics.count')}</th>
+          <th scope="col">{t('manager.statistics.share')}</th>
+        </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <tr key={item.key}>
-              <td>{item.label}</td>
-              <td>{formatNumber(item.count)}</td>
-              <td>
-                <meter max={maxCount} min={0} value={item.count}>{item.count}</meter>
-              </td>
-            </tr>
-          ))}
+        {items.map((item) => (
+          <tr key={item.key}>
+            <td>{item.label}</td>
+            <td>{formatNumber(item.count)}</td>
+            <td>
+              <meter max={maxCount} min={0} value={item.count}>{item.count}</meter>
+            </td>
+          </tr>
+        ))}
         </tbody>
       </table>
     )}
   </section>;
 }
 
-function StateChart({ stats }: { stats: DownloadStats }) {
+function StateChart({stats}: { stats: DownloadStats }) {
   const total = stats.stateCounts.completed + stats.stateCounts.interrupted + stats.stateCounts.inProgress;
 
   return <section aria-label={t('manager.statistics.completedVsInterrupted')}>

@@ -1,35 +1,32 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-import { createDownloadActionService } from '../../application/download-actions';
-import type { DownloadSearchQuery, DownloadsPort } from '../../application/download-repository';
-import type { DownloadRecord } from '../../domain/downloads/types';
-import { filterDownloads, type DownloadFilters } from '../../domain/downloads/filter-downloads';
-import { searchDownloads } from '../../domain/downloads/search-downloads';
-import { sortDownloads } from '../../domain/downloads/sort-downloads';
-import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
-import { SearchInput, ToastRegion, type ToastMessage } from '../shared';
-import { useActiveDownloadPolling } from '../shared/hooks';
-import { t } from '../shared/i18n';
+import {createDownloadActionService} from '../../application/download-actions';
+import type {DownloadSearchQuery, DownloadsPort} from '../../application/download-repository';
+import {type DownloadFilters, filterDownloads} from '../../domain/downloads/filter-downloads';
+import {searchDownloads} from '../../domain/downloads/search-downloads';
+import {sortDownloads} from '../../domain/downloads/sort-downloads';
+import type {DownloadRecord} from '../../domain/downloads/types';
+import {ChromeDownloadsApi} from '../../platform/chrome/downloads-api';
+import {SearchInput, type ToastMessage, ToastRegion} from '../shared';
+import {useActiveDownloadPolling} from '../shared';
+import {t} from '../shared';
 import {
-  EMPTY_MANAGER_FILTERS,
-  ManagerFilters,
-  type ManagerFilterState,
-} from './components/ManagerFilters';
-import { ManagerSidebar } from './components/ManagerSidebar';
-import {
-  sortOptionFor,
   type ManagerGroupKey,
   type ManagerSortKey,
   type ManagerView,
+  sortOptionFor,
 } from './components/manager-options';
-import { DownloadsView } from './views/DownloadsView';
-import { DuplicatesView } from './views/DuplicatesView';
-import { OrganizerView } from './views/OrganizerView';
-import { SettingsView } from './views/SettingsView';
-import { StatisticsView } from './views/StatisticsView';
+import {EMPTY_MANAGER_FILTERS, ManagerFilters, type ManagerFilterState} from './components/ManagerFilters';
+import {ManagerSidebar} from './components/ManagerSidebar';
+import {DownloadsView} from './views/DownloadsView';
+import {DuplicatesView} from './views/DuplicatesView';
+import {OrganizerView} from './views/OrganizerView';
+import {SettingsView} from './views/SettingsView';
+import {StatisticsView} from './views/StatisticsView';
 
 export interface RuntimeMessageSource {
   addListener(listener: (message: unknown) => void): void;
+
   removeListener(listener: (message: unknown) => void): void;
 }
 
@@ -39,9 +36,9 @@ export interface ManagerAppProps {
   now?: Date;
 }
 
-const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = { state: 'in_progress' };
-const HISTORY_QUERY: DownloadSearchQuery = { limit: 500, orderBy: ['-startTime'] };
-const STATISTICS_HISTORY_QUERY: DownloadSearchQuery = { orderBy: ['-startTime'] };
+const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = {state: 'in_progress'};
+const HISTORY_QUERY: DownloadSearchQuery = {limit: 500, orderBy: ['-startTime']};
+const STATISTICS_HISTORY_QUERY: DownloadSearchQuery = {orderBy: ['-startTime']};
 const SEARCH_DEBOUNCE_MS = 300;
 const HISTORY_REMOVAL_UNDO_MS = 5_000;
 
@@ -51,10 +48,10 @@ interface PendingHistoryRemoval {
 }
 
 export function ManagerApp({
-  downloadsPort,
-  runtimeMessages = defaultRuntimeMessages(),
-  now = new Date(),
-}: ManagerAppProps) {
+                             downloadsPort,
+                             runtimeMessages = defaultRuntimeMessages(),
+                             now = new Date(),
+                           }: ManagerAppProps) {
   const defaultDownloadsPort = useMemo(() => new ChromeDownloadsApi(), []);
   const resolvedDownloadsPort = downloadsPort ?? defaultDownloadsPort;
   const [view, setView] = useState<ManagerView>(() => initialManagerView());
@@ -80,9 +77,9 @@ export function ManagerApp({
     restoreDownload,
     statisticsDownloads,
   } = useManagerDownloads(resolvedDownloadsPort, runtimeMessages);
-  const { metrics } = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
+  const {metrics} = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
   const downloadActions = useMemo(
-    () => createDownloadActionService({ downloadsPort: resolvedDownloadsPort }),
+    () => createDownloadActionService({downloadsPort: resolvedDownloadsPort}),
     [resolvedDownloadsPort],
   );
   const runAction = useCallback((action: () => Promise<unknown> | void) => {
@@ -123,7 +120,7 @@ export function ManagerApp({
       });
     }, HISTORY_REMOVAL_UNDO_MS);
 
-    pendingHistoryRemovalTimers.current.set(download.id, { download, timeoutId });
+    pendingHistoryRemovalTimers.current.set(download.id, {download, timeoutId});
     setHistoryRemovalToasts((current) => [
       ...current.filter((toast) => toast.id !== toastId),
       {
@@ -160,7 +157,7 @@ export function ManagerApp({
   const visibleDownloads = useMemo(() => {
     const viewFiltered = view === 'duplicates' || view === 'statistics' || view === 'organizer' || view === 'settings'
       ? downloads
-      : filterDownloads(downloads, { predicate: view });
+      : filterDownloads(downloads, {predicate: view});
     const queryFiltered = filterDownloads(viewFiltered, toDownloadFilters(filters));
     const searched = searchDownloads(queryFiltered, debouncedSearch);
     return sortDownloads(searched, sortOptionFor(sortBy));
@@ -175,8 +172,9 @@ export function ManagerApp({
   return <main className="downly-manager-shell">
     <header>
       <h1>{t('manager.title')}</h1>
-      <p aria-label={t('manager.loadedDownloads')}>{t('manager.loadedDownloadsValue', { count: downloads.length })}</p>
-      <p aria-label={t('manager.activeDownloads')}>{t('manager.activeDownloadsValue', { count: activeDownloads.length })}</p>
+      <p aria-label={t('manager.loadedDownloads')}>{t('manager.loadedDownloadsValue', {count: downloads.length})}</p>
+      <p
+        aria-label={t('manager.activeDownloads')}>{t('manager.activeDownloadsValue', {count: activeDownloads.length})}</p>
       <button onClick={() => void refresh()} type="button">{t('manager.refresh')}</button>
       <button
         aria-expanded={filtersOpen}
@@ -188,10 +186,10 @@ export function ManagerApp({
       </button>
     </header>
 
-    <ManagerSidebar activeView={view} onViewChange={setView} />
+    <ManagerSidebar activeView={view} onViewChange={setView}/>
 
     <section aria-label={t('manager.controls')}>
-      <SearchInput value={search} onChange={setSearch} />
+      <SearchInput value={search} onChange={setSearch}/>
       {filtersOpen ? (
         <aside aria-label={t('manager.filters.region')} id="manager-filters">
           <ManagerFilters
@@ -216,11 +214,11 @@ export function ManagerApp({
     </section>
 
     {view === 'settings' ? (
-      <SettingsView />
+      <SettingsView/>
     ) : view === 'statistics' ? (
-      <StatisticsView downloads={statisticsDownloads} now={now} />
+      <StatisticsView downloads={statisticsDownloads} now={now}/>
     ) : view === 'organizer' ? (
-      <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null} />
+      <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null}/>
     ) : view === 'duplicates' ? (
       <DuplicatesView
         downloads={visibleDownloads}
@@ -248,7 +246,7 @@ export function ManagerApp({
     <ToastRegion
       messages={[
         ...historyRemovalToasts,
-        ...(actionError ? [{ id: 'download-action-error', tone: 'error' as const, message: actionError }] : []),
+        ...(actionError ? [{id: 'download-action-error', tone: 'error' as const, message: actionError}] : []),
       ]}
       onDismiss={dismissToast}
     />
@@ -363,7 +361,7 @@ function useManagerDownloads(
 
     const listener = (message: unknown) => {
       if (isDownloadsInvalidatedMessage(message)) {
-        void refresh({ showLoading: false });
+        void refresh({showLoading: false});
       }
     };
 

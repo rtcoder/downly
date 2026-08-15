@@ -1,12 +1,12 @@
-import { MANAGER_VIEWS, type ManagerView } from './manager-options';
-import { t } from '../../shared/i18n';
+import {t} from '../../shared';
+import {MANAGER_VIEWS, type ManagerView} from './manager-options';
 
 export interface ManagerSidebarProps {
   activeView: ManagerView;
   onViewChange: (view: ManagerView) => void;
 }
 
-export function ManagerSidebar({ activeView, onViewChange }: ManagerSidebarProps) {
+export function ManagerSidebar({activeView, onViewChange}: ManagerSidebarProps) {
   return <nav aria-label={t('manager.sidebar.label')}>
     {MANAGER_VIEWS.map((view) => (
       <button

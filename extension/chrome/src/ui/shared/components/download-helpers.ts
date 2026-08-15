@@ -1,6 +1,6 @@
-import type { ActiveDownloadMetrics } from '../../../application/active-download-sampler';
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { t } from '../i18n';
+import type {ActiveDownloadMetrics} from '../../../application/active-download-sampler';
+import type {DownloadRecord} from '../../../domain/downloads/types';
+import {t} from '../i18n';
 
 export interface DownloadComponentProps {
   download: DownloadRecord;
@@ -12,7 +12,7 @@ export function displayFilename(download: DownloadRecord): string {
     return `${download.basename}.${download.extension}`;
   }
 
-  return download.basename || download.filename || t('shared.download.fallbackName', { id: download.id });
+  return download.basename || download.filename || t('shared.download.fallbackName', {id: download.id});
 }
 
 export function progressPercent(download: DownloadRecord): number | null {

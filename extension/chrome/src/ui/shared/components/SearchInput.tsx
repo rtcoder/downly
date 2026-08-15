@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import {t} from '../i18n';
 
 export interface SearchInputProps {
   value: string;
@@ -6,7 +6,7 @@ export interface SearchInputProps {
   placeholder?: string;
 }
 
-export function SearchInput({ value, onChange, placeholder = t('shared.search.label') }: SearchInputProps) {
+export function SearchInput({value, onChange, placeholder = t('shared.search.label')}: SearchInputProps) {
   return <label>
     <span>{t('shared.search.label')}</span>
     <input

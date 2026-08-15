@@ -1,11 +1,10 @@
-import type { ActiveDownloadMetrics } from '../../../application/active-download-sampler';
-import type { DownloadActionService } from '../../../application/download-actions';
-import type { DownloadTimeGroupId } from '../../../domain/downloads/group-downloads';
-import type { DownloadRecord } from '../../../domain/downloads/types';
-import { groupDownloadsByTime } from '../../../domain/downloads/group-downloads';
-import { DownloadRow, EmptyState } from '../../shared';
-import { t, type I18nKey } from '../../shared/i18n';
-import type { ManagerGroupKey } from '../components/manager-options';
+import type {ActiveDownloadMetrics} from '../../../application/active-download-sampler';
+import type {DownloadActionService} from '../../../application/download-actions';
+import type {DownloadTimeGroupId} from '../../../domain/downloads/group-downloads';
+import {groupDownloadsByTime} from '../../../domain/downloads/group-downloads';
+import type {DownloadRecord} from '../../../domain/downloads/types';
+import {DownloadRow, EmptyState, type I18nKey, t} from '../../shared';
+import type {ManagerGroupKey} from '../components/manager-options';
 
 export interface DownloadsViewProps {
   downloads: DownloadRecord[];
@@ -19,21 +18,22 @@ export interface DownloadsViewProps {
 }
 
 export function DownloadsView({
-  downloads,
-  groupBy,
-  loading,
-  metrics,
-  now,
-  downloadActions,
-  onAction,
-  onEraseHistory,
-}: DownloadsViewProps) {
+                                downloads,
+                                groupBy,
+                                loading,
+                                metrics,
+                                now,
+                                downloadActions,
+                                onAction,
+                                onEraseHistory,
+                              }: DownloadsViewProps) {
   if (loading) {
     return <p>{t('manager.downloads.loading')}</p>;
   }
 
   if (downloads.length === 0) {
-    return <EmptyState title={t('manager.downloads.emptyTitle')} description={t('manager.downloads.emptyDescription')} />;
+    return <EmptyState title={t('manager.downloads.emptyTitle')}
+                       description={t('manager.downloads.emptyDescription')}/>;
   }
 
   if (groupBy === 'none') {
@@ -79,7 +79,7 @@ function renderRow(
 
 function groupsFor(downloads: DownloadRecord[], groupBy: ManagerGroupKey, now: Date) {
   if (groupBy === 'time') {
-    return groupDownloadsByTime(downloads, { now }).map((group) => ({
+    return groupDownloadsByTime(downloads, {now}).map((group) => ({
       ...group,
       label: t(timeGroupLabelKeys[group.id]),
     }));

@@ -3,7 +3,7 @@ export interface EmptyStateProps {
   description?: string;
 }
 
-export function EmptyState({ title, description }: EmptyStateProps) {
+export function EmptyState({title, description}: EmptyStateProps) {
   return <section aria-label={title}>
     <h2>{title}</h2>
     {description ? <p>{description}</p> : null}

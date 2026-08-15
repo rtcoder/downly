@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-import { createDownloadActionService } from '../../application/download-actions';
-import type { DownloadsPort } from '../../application/download-repository';
-import type { DownloadRecord } from '../../domain/downloads/types';
-import { ChromeDownloadsApi } from '../../platform/chrome/downloads-api';
-import { ChromeRuntimeApi } from '../../platform/chrome/runtime-api';
-import { DownloadRow, EmptyState, SearchInput, ToastRegion, type ToastMessage } from '../shared';
-import { useActiveDownloadPolling, useDownloads, type RuntimeMessageSource } from '../shared/hooks';
-import { t } from '../shared/i18n';
+import {createDownloadActionService} from '../../application/download-actions';
+import type {DownloadsPort} from '../../application/download-repository';
+import type {DownloadRecord} from '../../domain/downloads/types';
+import {ChromeDownloadsApi} from '../../platform/chrome/downloads-api';
+import {ChromeRuntimeApi} from '../../platform/chrome/runtime-api';
+import {
+  DownloadRow,
+  EmptyState,
+  type RuntimeMessageSource,
+  SearchInput,
+  t,
+  type ToastMessage,
+  ToastRegion,
+  useActiveDownloadPolling,
+  useDownloads,
+} from '../shared';
 
-export type { RuntimeMessageSource };
+export type {RuntimeMessageSource};
 
 export interface SidePanelAppProps {
   downloadsPort?: DownloadsPort;
@@ -25,10 +33,10 @@ interface PendingHistoryRemoval {
 }
 
 export function SidePanelApp({
-  downloadsPort,
-  runtimeMessages = defaultRuntimeMessages(),
-  openManager = openFullManager,
-}: SidePanelAppProps) {
+                               downloadsPort,
+                               runtimeMessages = defaultRuntimeMessages(),
+                               openManager = openFullManager,
+                             }: SidePanelAppProps) {
   const defaultDownloadsPort = useMemo(() => new ChromeDownloadsApi(), []);
   const resolvedDownloadsPort = downloadsPort ?? defaultDownloadsPort;
   const [search, setSearch] = useState('');
@@ -43,7 +51,7 @@ export function SidePanelApp({
     restoreDownload,
   } = useDownloads(resolvedDownloadsPort, runtimeMessages);
   const downloadActions = useMemo(
-    () => createDownloadActionService({ downloadsPort: resolvedDownloadsPort }),
+    () => createDownloadActionService({downloadsPort: resolvedDownloadsPort}),
     [resolvedDownloadsPort],
   );
   const runAction = useCallback((action: () => Promise<unknown> | void) => {
@@ -84,7 +92,7 @@ export function SidePanelApp({
       });
     }, HISTORY_REMOVAL_UNDO_MS);
 
-    pendingHistoryRemovalTimers.current.set(download.id, { download, timeoutId });
+    pendingHistoryRemovalTimers.current.set(download.id, {download, timeoutId});
     setHistoryRemovalToasts((current) => [
       ...current.filter((toast) => toast.id !== toastId),
       {
@@ -115,7 +123,7 @@ export function SidePanelApp({
     () => downloads.filter((download) => download.state === 'in_progress'),
     [downloads],
   );
-  const { metrics } = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
+  const {metrics} = useActiveDownloadPolling(resolvedDownloadsPort, activeDownloads, replaceActiveDownloads);
   const visibleDownloads = useMemo(
     () => filterDownloads(downloads, search),
     [downloads, search],
@@ -124,10 +132,11 @@ export function SidePanelApp({
   return <main className="downly-sidepanel-shell">
     <header>
       <h1>{t('sidePanel.title')}</h1>
-      <p aria-label={t('sidePanel.activeDownloads')}>{t('sidePanel.activeDownloadsValue', { count: activeDownloads.length })}</p>
+      <p
+        aria-label={t('sidePanel.activeDownloads')}>{t('sidePanel.activeDownloadsValue', {count: activeDownloads.length})}</p>
       <button type="button" onClick={openManager}>{t('sidePanel.openManager')}</button>
     </header>
-    <SearchInput value={search} onChange={setSearch} />
+    <SearchInput value={search} onChange={setSearch}/>
     {loading ? <p>{t('manager.downloads.loading')}</p> : null}
     {!loading && visibleDownloads.length === 0 ? (
       <EmptyState
@@ -158,7 +167,7 @@ export function SidePanelApp({
     <ToastRegion
       messages={[
         ...historyRemovalToasts,
-        ...(actionError ? [{ id: 'download-action-error', tone: 'error' as const, message: actionError }] : []),
+        ...(actionError ? [{id: 'download-action-error', tone: 'error' as const, message: actionError}] : []),
       ]}
       onDismiss={dismissToast}
     />

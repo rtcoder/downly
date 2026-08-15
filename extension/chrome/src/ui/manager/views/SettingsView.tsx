@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {
   getSettings,
@@ -6,12 +6,12 @@ import {
   type SettingsStoragePort,
   updateSettings,
 } from '../../../application/settings-repository';
-import type { DownlySettings } from '../../../domain/settings/types';
-import { ChromeNativeUiOptionsApi, type NativeUiOptionsResult } from '../../../platform/chrome/native-ui-options-api';
-import { ChromeRuntimeApi } from '../../../platform/chrome/runtime-api';
-import { ChromeStorageApi } from '../../../platform/chrome/storage-api';
-import { t } from '../../shared/i18n';
-import { applyTheme } from '../../shared/theme';
+import type {DownlySettings} from '../../../domain/settings/types';
+import {ChromeNativeUiOptionsApi, type NativeUiOptionsResult} from '../../../platform/chrome/native-ui-options-api';
+import {ChromeRuntimeApi} from '../../../platform/chrome/runtime-api';
+import {ChromeStorageApi} from '../../../platform/chrome/storage-api';
+import {t} from '../../shared';
+import {applyTheme} from '../../shared/theme';
 
 export interface SettingsViewProps {
   storage?: SettingsStoragePort;
@@ -20,10 +20,10 @@ export interface SettingsViewProps {
 }
 
 export function SettingsView({
-  storage: providedStorage,
-  applyNativeUiOptions: providedApplyNativeUiOptions,
-  version: providedVersion,
-}: SettingsViewProps) {
+                               storage: providedStorage,
+                               applyNativeUiOptions: providedApplyNativeUiOptions,
+                               version: providedVersion,
+                             }: SettingsViewProps) {
   const storage = useMemo(() => providedStorage ?? new ChromeStorageApi(), [providedStorage]);
   const applyNativeUiOptions = useCallback((settings: Pick<DownlySettings, 'replaceNativeDownloadsUi'>) => {
     if (providedApplyNativeUiOptions) {
@@ -80,8 +80,8 @@ export function SettingsView({
   }, [applyNativeUiOptions, storage]);
 
   const statusMessages = useMemo(() => [
-    warning ? { id: 'native-ui-warning', role: 'alert' as const, message: warning } : null,
-    error ? { id: 'settings-error', role: 'alert' as const, message: error } : null,
+    warning ? {id: 'native-ui-warning', role: 'alert' as const, message: warning} : null,
+    error ? {id: 'settings-error', role: 'alert' as const, message: error} : null,
   ].filter((message): message is { id: string; role: 'alert'; message: string } => message !== null), [error, warning]);
 
   if (!settings) {
@@ -104,7 +104,7 @@ export function SettingsView({
         {t('manager.settings.theme')}
         <select
           aria-label={t('manager.settings.theme')}
-          onChange={(event) => void persist({ theme: event.currentTarget.value as DownlySettings['theme'] })}
+          onChange={(event) => void persist({theme: event.currentTarget.value as DownlySettings['theme']})}
           value={settings.theme}
         >
           <option value="system">{t('manager.settings.theme.system')}</option>
@@ -119,7 +119,7 @@ export function SettingsView({
       <label>
         <input
           checked={settings.replaceNativeDownloadsUi}
-          onChange={(event) => void persist({ replaceNativeDownloadsUi: event.currentTarget.checked })}
+          onChange={(event) => void persist({replaceNativeDownloadsUi: event.currentTarget.checked})}
           type="checkbox"
         />
         {t('manager.settings.replaceNativeUi')}
@@ -127,7 +127,7 @@ export function SettingsView({
       <label>
         <input
           checked={settings.showActiveCountBadge}
-          onChange={(event) => void persist({ showActiveCountBadge: event.currentTarget.checked })}
+          onChange={(event) => void persist({showActiveCountBadge: event.currentTarget.checked})}
           type="checkbox"
         />
         {t('manager.settings.showBadge')}
@@ -140,7 +140,7 @@ export function SettingsView({
         {t('manager.settings.filenameConflict')}
         <select
           aria-label={t('manager.settings.filenameConflict')}
-          onChange={(event) => void persist({ conflictAction: event.currentTarget.value as DownlySettings['conflictAction'] })}
+          onChange={(event) => void persist({conflictAction: event.currentTarget.value as DownlySettings['conflictAction']})}
           value={settings.conflictAction}
         >
           <option value="uniquify">{t('manager.settings.conflict.keepBoth')}</option>
@@ -156,7 +156,7 @@ export function SettingsView({
       <p>{t('manager.settings.historyUse')}</p>
     </section>
 
-    <p>{t('manager.settings.version', { version })}</p>
+    <p>{t('manager.settings.version', {version})}</p>
   </section>;
 }
 

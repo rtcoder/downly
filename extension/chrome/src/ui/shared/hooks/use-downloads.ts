@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-import type { DownloadSearchQuery, DownloadsPort } from '../../../application/download-repository';
-import type { DownloadRecord } from '../../../domain/downloads/types';
+import type {DownloadSearchQuery, DownloadsPort} from '../../../application/download-repository';
+import type {DownloadRecord} from '../../../domain/downloads/types';
 
 export interface RuntimeMessageSource {
   addListener(listener: (message: unknown) => void): void;
+
   removeListener(listener: (message: unknown) => void): void;
 }
 
@@ -17,8 +18,8 @@ export interface UseDownloadsResult {
   restoreDownload: (download: DownloadRecord) => void;
 }
 
-const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = { state: 'in_progress' };
-const RECENT_DOWNLOADS_QUERY: DownloadSearchQuery = { limit: 50, orderBy: ['-startTime'] };
+const ACTIVE_DOWNLOADS_QUERY: DownloadSearchQuery = {state: 'in_progress'};
+const RECENT_DOWNLOADS_QUERY: DownloadSearchQuery = {limit: 50, orderBy: ['-startTime']};
 
 export function useDownloads(
   downloadsPort: DownloadsPort,
@@ -73,7 +74,7 @@ export function useDownloads(
 
     const listener = (message: unknown) => {
       if (isDownloadsInvalidatedMessage(message)) {
-        void refresh({ showLoading: false });
+        void refresh({showLoading: false});
       }
     };
 

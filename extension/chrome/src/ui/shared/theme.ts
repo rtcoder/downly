@@ -1,5 +1,5 @@
-import { getSettings, type SettingsStoragePort } from '../../application/settings-repository';
-import type { DownlySettings } from '../../domain/settings/types';
+import {getSettings, type SettingsStoragePort} from '../../application/settings-repository';
+import type {DownlySettings} from '../../domain/settings/types';
 
 export function applyTheme(theme: DownlySettings['theme']): void {
   document.documentElement.dataset.theme = theme;
