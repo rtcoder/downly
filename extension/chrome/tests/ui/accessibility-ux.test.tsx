@@ -65,7 +65,9 @@ describe('accessibility and responsive UX hardening', () => {
     expect(css).toContain('.toast-region');
     expect(css).toContain('inset-block-end');
     expect(css).toContain('.download-actions-menu');
+    expect(css).toContain('.download-actions-menu-overlay');
     expect(css).toContain('.downly-manager-shell article .download-actions');
+    expect(css).toContain('.downly-sidepanel-shell article .download-actions');
     expect(css).toContain('justify-content: flex-end');
     expect(css).toContain('.download-row-progress');
   });

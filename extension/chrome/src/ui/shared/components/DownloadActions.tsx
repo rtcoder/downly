@@ -4,6 +4,7 @@ import {getDownloadActionAvailability} from '../../../application/download-actio
 import type {DownloadRecord} from '../../../domain/downloads/types';
 import {t} from '../i18n';
 import {ConfirmDialog} from './ConfirmDialog';
+import {displayFilename} from './download-helpers';
 
 export interface DownloadActionsProps {
   download: DownloadRecord;
@@ -54,6 +55,7 @@ export function DownloadActions({
                                   onRetry,
                                   onShowInFolder,
                                 }: DownloadActionsProps) {
+  const filename = displayFilename(download);
   const availability = getDownloadActionAvailability(download);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,42 +71,42 @@ export function DownloadActions({
   const overflowActions: DownloadActionDefinition[] = [
     availability.canPause && onPause ? {
       icon: 'pause',
-      label: t('shared.downloadActions.pauseLabel'),
+      label: t('shared.downloadActions.pauseLabel', {filename}),
       onSelect: () => onPause(download.id),
     } : null,
     availability.canCancel && onCancel ? {
       icon: 'cancel',
-      label: t('shared.downloadActions.cancelLabel'),
+      label: t('shared.downloadActions.cancelLabel', {filename}),
       onSelect: () => onCancel(download.id),
     } : null,
     availability.canRetry && !download.canResume && onRetry ? {
       icon: 'retry',
-      label: t('shared.downloadActions.retryLabel'),
+      label: t('shared.downloadActions.retryLabel', {filename}),
       onSelect: () => onRetry(download.id),
     } : null,
     availability.canDownloadAgain && onDownloadAgain ? {
       icon: 'download',
-      label: t('shared.downloadActions.downloadAgainLabel'),
+      label: t('shared.downloadActions.downloadAgainLabel', {filename}),
       onSelect: () => onDownloadAgain(download.id),
     } : null,
     availability.canOpen && onOpen ? {
       icon: 'open',
-      label: t('shared.downloadActions.openLabel'),
+      label: t('shared.downloadActions.openLabel', {filename}),
       onSelect: () => onOpen(download.id),
     } : null,
     availability.canCopySourceUrl && onCopySourceUrl ? {
       icon: 'copy',
-      label: t('shared.downloadActions.copySourceUrlLabel'),
+      label: t('shared.downloadActions.copySourceUrlLabel', {filename}),
       onSelect: () => onCopySourceUrl(download.id),
     } : null,
     availability.canCopyFinalUrl && onCopyFinalUrl ? {
       icon: 'copy',
-      label: t('shared.downloadActions.copyFinalUrlLabel'),
+      label: t('shared.downloadActions.copyFinalUrlLabel', {filename}),
       onSelect: () => onCopyFinalUrl(download.id),
     } : null,
     availability.canRemoveFile && onRemoveFile ? {
       icon: 'delete',
-      label: t('shared.downloadActions.deleteFileLabel'),
+      label: t('shared.downloadActions.deleteFileLabel', {filename}),
       onSelect: () => setPendingConfirmation('remove-file'),
     } : null,
   ].filter((action): action is DownloadActionDefinition => Boolean(action));
@@ -115,17 +117,17 @@ export function DownloadActions({
   };
 
   return <>
-    <div aria-label={t('shared.downloadActions.actionsFor')} className="download-actions" role="toolbar">
+    <div aria-label={t('shared.downloadActions.actionsFor', {filename})} className="download-actions" role="toolbar">
       {availability.canResume && onResume ? (
-        <DownloadActionButton icon="resume" label={t('shared.downloadActions.resumeLabel')}
+        <DownloadActionButton icon="resume" label={t('shared.downloadActions.resumeLabel', {filename})}
                               onClick={() => onResume(download.id)}/>
       ) : null}
       {availability.canShowInFolder && onShowInFolder ? (
-        <DownloadActionButton icon="folder" label={t('shared.downloadActions.showInFolderLabel')}
+        <DownloadActionButton icon="folder" label={t('shared.downloadActions.showInFolderLabel', {filename})}
                               onClick={() => onShowInFolder(download.id)}/>
       ) : null}
       {availability.canEraseHistory && onEraseHistory ? (
-        <DownloadActionButton icon="history" label={t('shared.downloadActions.removeFromHistoryLabel')}
+        <DownloadActionButton icon="history" label={t('shared.downloadActions.removeFromHistoryLabel', {filename})}
                               onClick={() => onEraseHistory(download.id)}/>
       ) : null}
       {overflowActions.length > 0 ? (
@@ -134,7 +136,7 @@ export function DownloadActions({
             ariaControls={menuId}
             ariaExpanded={menuOpen}
             icon="more"
-            label={t('shared.downloadActions.moreActionsLabel')}
+            label={t('shared.downloadActions.moreActionsLabel', {filename})}
             onClick={() => setMenuOpen((open) => !open)}
           />
           {menuOpen ? (
@@ -150,9 +152,17 @@ export function DownloadActions({
         </div>
       ) : null}
     </div>
+    {menuOpen ? (
+      <button
+        aria-label={t('shared.downloadActions.closeMenuLabel')}
+        className="download-actions-menu-overlay"
+        onClick={() => setMenuOpen(false)}
+        type="button"
+      />
+    ) : null}
     <ConfirmDialog
       open={pendingConfirmation === 'remove-file'}
-      title={t('shared.downloadActions.deleteFileTitle')}
+      title={t('shared.downloadActions.deleteFileTitle', {filename})}
       description={t('shared.downloadActions.deleteFileDescription')}
       confirmLabel={t('shared.downloadActions.deleteFile')}
       onConfirm={confirm}

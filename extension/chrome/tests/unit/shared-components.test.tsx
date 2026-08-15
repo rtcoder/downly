@@ -277,6 +277,21 @@ describe('shared download components', () => {
     expect(within(toolbar).getAllByRole('img', { hidden: true }).length).toBeGreaterThanOrEqual(3);
   });
 
+  it('closes the download action menu when the menu overlay is clicked', () => {
+    render(<DownloadActions
+      download={download({ state: 'complete' })}
+      onDownloadAgain={vi.fn()}
+      onOpen={vi.fn()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Report.pdf' }));
+    expect(screen.getByRole('menuitem', { name: 'Download Report.pdf again' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close action menu' }));
+
+    expect(screen.queryByRole('menuitem', { name: 'Download Report.pdf again' })).toBeNull();
+  });
+
   it('renders status above progress inside the row progress section', () => {
     render(<DownloadRow download={download()} metrics={activeMetrics} />);
 
