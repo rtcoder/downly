@@ -54,6 +54,15 @@ afterEach(() => {
 });
 
 describe('shared download components', () => {
+  it('keeps long download filenames available as a single-line title', () => {
+    const filename = 'ACFrOgDsK-VdFsBIDeaYLFgA4UWF2AdAohXd7jco_bmwAWH8ld5XPuu_MGVFuQiakGGo7_qmBBewP6Kk57CMRBIaAwFei2zdbRt4iCWwNn0OJmKT_L1uOuACb.pDf';
+
+    render(<DownloadRow download={download({ basename: filename, extension: '', filename: `/tmp/${filename}` })} />);
+
+    const heading = screen.getByRole('heading', { name: filename });
+    expect(heading.getAttribute('title')).toBe(filename);
+  });
+
   it('renders an active download row with progress, status, and cancel action', () => {
     const onCancel = vi.fn();
 

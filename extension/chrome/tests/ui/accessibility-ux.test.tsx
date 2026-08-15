@@ -57,6 +57,9 @@ describe('accessibility and responsive UX hardening', () => {
     expect(css).toContain('@media (width >= 640px)');
     expect(css).toContain('@media (width >= 1024px)');
     expect(css).toContain('input:not([type="checkbox"]):not([type="radio"])');
+    expect(css).toContain('.download-row-details h3');
+    expect(css).toContain('text-overflow: ellipsis');
+    expect(css).toContain('white-space: nowrap');
   });
 
   it.each([320, 400, 600])('renders the side panel landmarks at %i px width', async (width) => {

@@ -223,6 +223,16 @@ article > div {
   min-width: 0;
 }
 
+.download-row-details {
+  min-width: 0;
+}
+
+.download-row-details h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 article h3,
 article h4 {
   margin: 0;

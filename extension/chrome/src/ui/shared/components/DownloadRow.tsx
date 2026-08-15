@@ -17,8 +17,8 @@ export function DownloadRow({ download, metrics, ...actions }: DownloadRowProps)
 
   return <article aria-label={filename}>
     <FileCategoryIcon category={download.category} />
-    <div>
-      <h3>{filename}</h3>
+    <div className="download-row-details">
+      <h3 title={filename}>{filename}</h3>
       <span>{formatSourceDomain(download)}</span>
       <time dateTime={download.startTime}>{formatDateTime(download.startTime)}</time>
     </div>
