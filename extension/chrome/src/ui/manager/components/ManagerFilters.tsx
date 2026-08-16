@@ -59,8 +59,8 @@ export function ManagerFilters({
     onFiltersChange({...filters, [key]: value});
   };
 
-  return <form aria-label={t('manager.filters.form')}>
-    <label>
+  return <form aria-label={t('manager.filters.form')} className="manager-filter-form">
+    <label className="manager-filter-field">
       <span>{t('manager.filters.sort')}</span>
       <select
         aria-label={t('manager.filters.sort')}
@@ -70,7 +70,7 @@ export function ManagerFilters({
         {MANAGER_SORTS.map((sort) => <option key={sort.id} value={sort.id}>{sort.label}</option>)}
       </select>
     </label>
-    <label>
+    <label className="manager-filter-field">
       <span>{t('manager.filters.group')}</span>
       <select
         aria-label={t('manager.filters.group')}
@@ -80,7 +80,7 @@ export function ManagerFilters({
         {MANAGER_GROUPS.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}
       </select>
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--small">
       <span>{t('manager.filters.state')}</span>
       <select
         aria-label={t('manager.filters.stateFilter')}
@@ -93,7 +93,7 @@ export function ManagerFilters({
         <option value="interrupted">{t('manager.filters.failed')}</option>
       </select>
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--small">
       <span>{t('manager.filters.category')}</span>
       <select
         aria-label={t('manager.filters.categoryFilter')}
@@ -105,7 +105,7 @@ export function ManagerFilters({
                                               value={category}>{t(categoryLabelKeys[category])}</option>)}
       </select>
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--tiny">
       <span>{t('manager.filters.extension')}</span>
       <input
         aria-label={t('manager.filters.extensionFilter')}
@@ -113,7 +113,7 @@ export function ManagerFilters({
         value={filters.extension}
       />
     </label>
-    <label>
+    <label className="manager-filter-field">
       <span>{t('manager.filters.sourceDomain')}</span>
       <input
         aria-label={t('manager.filters.sourceDomainFilter')}
@@ -121,7 +121,7 @@ export function ManagerFilters({
         value={filters.sourceDomain}
       />
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--date">
       <span>{t('manager.filters.startedAfter')}</span>
       <input
         aria-label={t('manager.filters.startedAfterFilter')}
@@ -130,7 +130,7 @@ export function ManagerFilters({
         value={filters.startedAfter}
       />
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--date">
       <span>{t('manager.filters.startedBefore')}</span>
       <input
         aria-label={t('manager.filters.startedBeforeFilter')}
@@ -139,7 +139,7 @@ export function ManagerFilters({
         value={filters.startedBefore}
       />
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--tiny">
       <span>{t('manager.filters.minSize')}</span>
       <input
         aria-label={t('manager.filters.minSizeFilter')}
@@ -149,7 +149,7 @@ export function ManagerFilters({
         value={filters.minSize}
       />
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--tiny">
       <span>{t('manager.filters.maxSize')}</span>
       <input
         aria-label={t('manager.filters.maxSizeFilter')}
@@ -159,7 +159,7 @@ export function ManagerFilters({
         value={filters.maxSize}
       />
     </label>
-    <label>
+    <label className="manager-filter-field manager-filter-field--small">
       <span>{t('manager.filters.availability')}</span>
       <select
         aria-label={t('manager.filters.availabilityFilter')}

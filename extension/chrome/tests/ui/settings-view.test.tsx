@@ -81,15 +81,15 @@ describe('SettingsView', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
-  it('persists native UI replacement and shows a non-destructive warning when Chrome reports a conflict', async () => {
+  it('persists Chrome download bubble visibility and shows a non-destructive warning when Chrome reports a conflict', async () => {
     const chrome = await renderSettings({ replaceNativeDownloadsUi: false }, 'Another extension controls downloads UI');
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Replace Chrome downloads UI' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hide Chrome download bubble' }));
 
     await waitFor(() => expect(chrome.stored.replaceNativeDownloadsUi).toBe(true));
     expect(chrome.setUiOptions).toHaveBeenCalledWith({ enabled: false }, expect.any(Function));
     expect(screen.getByRole('alert').textContent).toContain('Another extension controls downloads UI');
-    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Replace Chrome downloads UI' }).checked).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Hide Chrome download bubble' }).checked).toBe(true);
   });
 
   it('persists active download badge visibility changes', async () => {

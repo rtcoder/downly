@@ -70,6 +70,12 @@ describe('accessibility and responsive UX hardening', () => {
     expect(css).toContain('.downly-sidepanel-shell article .download-actions');
     expect(css).toContain('justify-content: flex-end');
     expect(css).toContain('.download-row-progress');
+    expect(css).toContain('.manager-workspace');
+    expect(css).toContain('.manager-controls');
+    expect(css).toContain('.manager-filter-panel');
+    expect(css).toContain('.manager-filter-form');
+    expect(css).toContain('--manager-filter-field-width');
+    expect(css).toContain('.manager-controls > label');
   });
 
   it.each([320, 400, 600])('renders the side panel landmarks at %i px width', async (width) => {
@@ -94,6 +100,7 @@ describe('accessibility and responsive UX hardening', () => {
     expect(screen.getByRole('navigation', { name: 'Manager views' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search downloads' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Filters' }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('region', { name: 'Download filters' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Load older downloads' }).hasAttribute('disabled')).toBe(true);
   });
 });

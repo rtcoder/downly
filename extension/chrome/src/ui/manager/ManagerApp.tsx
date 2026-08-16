@@ -188,52 +188,54 @@ export function ManagerApp({
 
     <ManagerSidebar activeView={view} onViewChange={setView}/>
 
-    <section aria-label={t('manager.controls')}>
-      <SearchInput value={search} onChange={setSearch}/>
-      {filtersOpen ? (
-        <aside aria-label={t('manager.filters.region')} id="manager-filters">
-          <ManagerFilters
-            filters={filters}
-            groupBy={groupBy}
-            onFiltersChange={setFilters}
-            onGroupByChange={setGroupBy}
-            onSortByChange={setSortBy}
-            sortBy={sortBy}
-          />
-        </aside>
-      ) : null}
-    </section>
+    <div className="manager-workspace">
+      <section aria-label={t('manager.controls')} className="manager-controls">
+        <SearchInput value={search} onChange={setSearch}/>
+        {filtersOpen ? (
+          <aside aria-label={t('manager.filters.region')} className="manager-filter-panel" id="manager-filters">
+            <ManagerFilters
+              filters={filters}
+              groupBy={groupBy}
+              onFiltersChange={setFilters}
+              onGroupByChange={setGroupBy}
+              onSortByChange={setSortBy}
+              sortBy={sortBy}
+            />
+          </aside>
+        ) : null}
+      </section>
 
-    {view === 'settings' ? (
-      <SettingsView/>
-    ) : view === 'statistics' ? (
-      <StatisticsView downloads={statisticsDownloads} now={now}/>
-    ) : view === 'organizer' ? (
-      <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null}/>
-    ) : view === 'duplicates' ? (
-      <DuplicatesView
-        downloads={visibleDownloads}
-        loading={loading}
-        onShowMatchingDownload={showMatchingDownload}
-      />
-    ) : (
-      <DownloadsView
-        downloadActions={downloadActions}
-        downloads={visibleDownloads}
-        groupBy={groupBy}
-        loading={loading}
-        metrics={metrics}
-        now={now}
-        onAction={runAction}
-        onEraseHistory={scheduleHistoryRemoval}
-      />
-    )}
+      {view === 'settings' ? (
+        <SettingsView/>
+      ) : view === 'statistics' ? (
+        <StatisticsView downloads={statisticsDownloads} now={now}/>
+      ) : view === 'organizer' ? (
+        <OrganizerView previewDownload={downloads[0] ?? activeDownloads[0] ?? null}/>
+      ) : view === 'duplicates' ? (
+        <DuplicatesView
+          downloads={visibleDownloads}
+          loading={loading}
+          onShowMatchingDownload={showMatchingDownload}
+        />
+      ) : (
+        <DownloadsView
+          downloadActions={downloadActions}
+          downloads={visibleDownloads}
+          groupBy={groupBy}
+          loading={loading}
+          metrics={metrics}
+          now={now}
+          onAction={runAction}
+          onEraseHistory={scheduleHistoryRemoval}
+        />
+      )}
 
-    <footer>
-      <button disabled={!canLoadOlder || loading || loadingOlder} onClick={() => void loadOlder()} type="button">
-        {t('manager.loadOlder')}
-      </button>
-    </footer>
+      <footer>
+        <button disabled={!canLoadOlder || loading || loadingOlder} onClick={() => void loadOlder()} type="button">
+          {t('manager.loadOlder')}
+        </button>
+      </footer>
+    </div>
     <ToastRegion
       messages={[
         ...historyRemovalToasts,

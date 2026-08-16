@@ -192,7 +192,7 @@ export const messages = {
   'manager.settings.theme.light': 'Light',
   'manager.settings.theme.dark': 'Dark',
   'manager.settings.chromeIntegration': 'Chrome integration',
-  'manager.settings.replaceNativeUi': 'Replace Chrome downloads UI',
+  'manager.settings.replaceNativeUi': 'Hide Chrome download bubble',
   'manager.settings.showBadge': 'Show active download count badge',
   'manager.settings.downloads': 'Downloads',
   'manager.settings.filenameConflict': 'When a filename already exists',

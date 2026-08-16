@@ -49,6 +49,6 @@ export class ChromeNativeUiOptionsApi {
       ? error.message
       : error === undefined
         ? undefined
-        : 'Chrome could not update the downloads UI setting.';
+        : 'Chrome could not update the download bubble setting.';
   }
 }
